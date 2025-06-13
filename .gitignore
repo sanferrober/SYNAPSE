@@ -1,0 +1,77 @@
+# Archivos y directorios a ignorar
+
+# Dependencias de Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de build
+build/
+dist/
+*.tgz
+*.tar.gz
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+
+# Archivos de configuración del IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos del sistema
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Archivos temporales
+*.tmp
+*.temp
+.cache/
+
+# Archivos de entorno
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos de prueba
+test_results*.log
+*_debug_output*.log
+
+# Archivos de documentación temporal
+*_report*.md
+*_diagnosis*.md
+*_analysis*.md
+*_success*.md
+
+# Directorios de deployment
+production_*/
+staging_*/
+
+# Archivos de configuración específicos
+nginx.conf
+setup.py
+
