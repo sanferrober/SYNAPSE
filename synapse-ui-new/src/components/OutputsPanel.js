@@ -39,11 +39,16 @@ const OutputsPanel = ({ currentPlan, planSteps }) => {
   // Filtrar pasos que tienen output - CORREGIDO para detectar outputs
   const stepsWithOutput = (planSteps || []).filter(step => {
     const hasOutput = step.output && step.output.trim().length > 0;
-    console.log(`📊 Paso ${step.id}: ${step.title} - Output: ${hasOutput ? 'SÍ' : 'NO'} (${step.output?.length || 0} chars)`);
+    console.log(`📊 Paso ${step.id}: ${step.title} - Status: ${step.status} - Output: ${hasOutput ? 'SÍ' : 'NO'} (${step.output?.length || 0} chars)`);
+    if (step.output) {
+      console.log(`📊 Output preview: ${step.output.substring(0, 100)}...`);
+    }
     return hasOutput;
   });
 
   console.log(`📊 Total pasos: ${planSteps?.length || 0}, Con output: ${stepsWithOutput.length}`);
+  console.log(`📊 Plan actual:`, currentPlan?.title || 'Sin plan');
+  console.log(`📊 Todos los pasos:`, planSteps?.map(s => ({ id: s.id, title: s.title, status: s.status, hasOutput: !!s.output })) || []);
 
   if (!currentPlan) {
     return (
@@ -64,9 +69,18 @@ const OutputsPanel = ({ currentPlan, planSteps }) => {
           <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>Esperando outputs...</p>
           <p className="text-sm">Los resultados aparecerán conforme se ejecuten los pasos</p>
-          <div className="mt-4 text-xs text-gray-400">
+          <div className="mt-4 text-xs text-gray-400 space-y-1">
             <p>Debug: {planSteps?.length || 0} pasos totales</p>
             <p>Pasos completados: {(planSteps || []).filter(s => s.status === 'completed').length}</p>
+            <p>Pasos con output: {(planSteps || []).filter(s => s.output && s.output.trim().length > 0).length}</p>
+            <div className="mt-2 text-left">
+              <p>Estados de pasos:</p>
+              {(planSteps || []).map(step => (
+                <div key={step.id} className="text-xs">
+                  {step.id}: {step.status} - {step.output ? `${step.output.length} chars` : 'sin output'}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

@@ -3,6 +3,8 @@ from datetime import datetime
 import threading
 import time
 import psutil
+import json
+import os
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
@@ -14,9 +16,16 @@ socketio = SocketIO(app, cors_allowed_origins="*", ping_timeout=60, ping_interva
 # Importar funciones de generación de outputs
 from output_generators import generate_step_output, generate_plan_summary
 
+# Importar funciones de análisis dinámico
+from dynamic_analysis import (
+    analyze_step_results,
+    generate_dynamic_steps,
+    should_expand_plan,
+    notify_plan_expansion
+)
+
 # Importar herramientas MCP CONSOLIDADAS (todas las anteriores + nuevas)
 import sys
-import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'mcp_integration'))
 from consolidated_mcp_tools import get_consolidated_mcp_tools, execute_mcp_tool
 # Estado del sistema con memoria persistente
@@ -46,6 +55,76 @@ core_tools = [
 # Combinar herramientas core con MCP consolidadas
 available_tools = core_tools + get_consolidated_mcp_tools()
 
+# 💾 FUNCIONES DE PERSISTENCIA DE MEMORIA
+MEMORY_FILE = 'synapse_memory.json'
+
+def save_memory_to_disk():
+    """Guardar memoria del sistema en disco"""
+    try:
+        memory_data = {
+            'memory_store': system_state['memory_store'],
+            'executed_plans': system_state['executed_plans'],
+            'last_saved': datetime.now().isoformat(),
+            'version': '2.1.0'
+        }
+
+        # Crear backup del archivo anterior si existe
+        if os.path.exists(MEMORY_FILE):
+            backup_file = f"{MEMORY_FILE}.backup"
+            os.rename(MEMORY_FILE, backup_file)
+
+        with open(MEMORY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(memory_data, f, indent=2, ensure_ascii=False)
+
+        print(f"💾 Memoria guardada en disco: {MEMORY_FILE}")
+        return True
+
+    except Exception as e:
+        print(f"❌ Error guardando memoria en disco: {e}")
+        return False
+
+def load_memory_from_disk():
+    """Cargar memoria del sistema desde disco"""
+    try:
+        if not os.path.exists(MEMORY_FILE):
+            print(f"📁 Archivo de memoria no encontrado: {MEMORY_FILE}")
+            return False
+
+        with open(MEMORY_FILE, 'r', encoding='utf-8') as f:
+            memory_data = json.load(f)
+
+        # Restaurar memoria
+        if 'memory_store' in memory_data:
+            system_state['memory_store'] = memory_data['memory_store']
+
+        if 'executed_plans' in memory_data:
+            system_state['executed_plans'] = memory_data['executed_plans']
+
+        print(f"💾 Memoria cargada desde disco:")
+        print(f"   - Conversaciones: {len(system_state['memory_store']['conversations'])}")
+        print(f"   - Planes ejecutados: {len(system_state['executed_plans'])}")
+        print(f"   - Outputs guardados: {len(system_state['memory_store']['plan_outputs'])}")
+        print(f"   - Preferencias de usuario: {len(system_state['memory_store']['user_preferences'])}")
+        print(f"   - Patrones aprendidos: {len(system_state['memory_store']['learned_patterns'])}")
+
+        return True
+
+    except Exception as e:
+        print(f"❌ Error cargando memoria desde disco: {e}")
+        return False
+
+def auto_save_memory():
+    """Guardar memoria automáticamente cada 5 minutos"""
+    def save_periodically():
+        while True:
+            time.sleep(300)  # 5 minutos
+            save_memory_to_disk()
+
+    thread = threading.Thread(target=save_periodically)
+    thread.daemon = True
+    thread.start()
+    print("🔄 Auto-guardado de memoria iniciado (cada 5 minutos)")
+
 def analyze_intent(message):
     """Análisis NLU mejorado para detectar intenciones"""
     message_lower = message.lower()
@@ -65,7 +144,14 @@ def analyze_intent(message):
                 detected_intents.append(intent)
                 break
     
-    return detected_intents if detected_intents else ['help_general']
+    # Analyze detected intents and enrich with dynamic planning capabilities
+    final_intents = detected_intents if detected_intents else ['help_general']
+
+    # Add dynamic planning intents if needed
+    if any(intent in ['create_app', 'plan_project', 'develop'] for intent in final_intents):
+        final_intents.extend(['dynamic_planning', 'step_analysis'])
+
+    return final_intents
 
 def generate_plan(message, intents):
     """Generador de planes inteligente basado en intenciones"""
@@ -206,36 +292,159 @@ def generate_plan(message, intents):
         }
 
 def generate_response(message, plan):
-    """Generar respuesta contextual inteligente"""
+    """Generar respuesta contextual basada en el plan"""
     responses = [
-        f"¡Perfecto! He analizado tu solicitud y he creado un plan detallado: '{plan['title']}'. Este plan incluye {len(plan['steps'])} pasos principales con un tiempo estimado de {plan['total_estimated_time']}.",
-        f"Excelente idea. He generado un plan completo para '{plan['title']}' que te guiará paso a paso. El plan está optimizado para completarse en aproximadamente {plan['total_estimated_time']}.",
-        f"¡Genial! He creado un plan estratégico llamado '{plan['title']}' con {len(plan['steps'])} fases bien definidas. Tiempo estimado total: {plan['total_estimated_time']}."
+        f"He analizado tu solicitud y he creado un plan completo: '{plan['title']}'. Este plan incluye {len(plan['steps'])} pasos principales que te ayudarán a lograr tu objetivo de manera eficiente.",
+        f"Perfecto, he diseñado una estrategia detallada para tu proyecto: '{plan['title']}'. El plan está estructurado en {len(plan['steps'])} fases que cubrirán todos los aspectos necesarios.",
+        f"Excelente idea. He preparado un plan de acción llamado '{plan['title']}' con {len(plan['steps'])} pasos clave que te guiarán desde el inicio hasta la finalización exitosa."
     ]
-    
     return random.choice(responses)
+
+def update_user_preferences(message, intents, session_id):
+    """Detectar y actualizar preferencias del usuario basadas en el mensaje"""
+    try:
+        message_lower = message.lower()
+        preferences_key = f'user_{session_id}'
+
+        # Inicializar preferencias si no existen
+        if preferences_key not in system_state['memory_store']['user_preferences']:
+            system_state['memory_store']['user_preferences'][preferences_key] = {
+                'language': 'es',  # Por defecto español
+                'response_style': 'balanced',
+                'preferred_tools': [],
+                'project_types': [],
+                'complexity_level': 'medium',
+                'last_updated': datetime.now().isoformat()
+            }
+
+        user_prefs = system_state['memory_store']['user_preferences'][preferences_key]
+        updated = False
+
+        # Detectar preferencias de idioma
+        if any(word in message_lower for word in ['english', 'inglés', 'in english']):
+            user_prefs['language'] = 'en'
+            updated = True
+        elif any(word in message_lower for word in ['español', 'castellano', 'en español']):
+            user_prefs['language'] = 'es'
+            updated = True
+
+        # Detectar estilo de respuesta preferido
+        if any(word in message_lower for word in ['detallado', 'completo', 'exhaustivo', 'detailed']):
+            user_prefs['response_style'] = 'detailed'
+            updated = True
+        elif any(word in message_lower for word in ['simple', 'básico', 'resumido', 'brief']):
+            user_prefs['response_style'] = 'simple'
+            updated = True
+
+        # Detectar tipos de proyecto preferidos
+        if 'create_app' in intents or 'plan_project' in intents:
+            if 'web' in message_lower:
+                if 'web_development' not in user_prefs['project_types']:
+                    user_prefs['project_types'].append('web_development')
+                    updated = True
+            if 'mobile' in message_lower or 'móvil' in message_lower:
+                if 'mobile_development' not in user_prefs['project_types']:
+                    user_prefs['project_types'].append('mobile_development')
+                    updated = True
+
+        # Detectar nivel de complejidad preferido
+        if any(word in message_lower for word in ['avanzado', 'complejo', 'profesional', 'advanced']):
+            user_prefs['complexity_level'] = 'high'
+            updated = True
+        elif any(word in message_lower for word in ['básico', 'simple', 'principiante', 'beginner']):
+            user_prefs['complexity_level'] = 'low'
+            updated = True
+
+        if updated:
+            user_prefs['last_updated'] = datetime.now().isoformat()
+            print(f"🎯 Preferencias actualizadas para usuario {session_id}: {user_prefs}")
+
+    except Exception as e:
+        print(f"⚠️ Error actualizando preferencias: {e}")
+
+def learn_from_plan_execution(plan, success_rate, execution_time):
+    """Aprender patrones de planes exitosos"""
+    try:
+        pattern = {
+            'id': f'pattern_{int(time.time())}',
+            'plan_type': plan.get('title', '').lower(),
+            'steps_count': len(plan.get('steps', [])),
+            'success_rate': success_rate,
+            'execution_time': execution_time,
+            'tools_used': [step.get('tools', []) for step in plan.get('steps', [])],
+            'timestamp': datetime.now().isoformat(),
+            'frequency': 1
+        }
+
+        # Buscar patrones similares existentes
+        existing_pattern = None
+        for p in system_state['memory_store']['learned_patterns']:
+            if (p.get('plan_type') == pattern['plan_type'] and
+                p.get('steps_count') == pattern['steps_count']):
+                existing_pattern = p
+                break
+
+        if existing_pattern:
+            # Actualizar patrón existente
+            existing_pattern['frequency'] += 1
+            existing_pattern['success_rate'] = (existing_pattern['success_rate'] + success_rate) / 2
+            existing_pattern['execution_time'] = (existing_pattern.get('execution_time', 0) + execution_time) / 2
+            existing_pattern['last_seen'] = datetime.now().isoformat()
+            print(f"🧠 Patrón actualizado: {existing_pattern['plan_type']} (frecuencia: {existing_pattern['frequency']})")
+        else:
+            # Crear nuevo patrón
+            system_state['memory_store']['learned_patterns'].append(pattern)
+            print(f"🧠 Nuevo patrón aprendido: {pattern['plan_type']}")
+
+        # Limitar número de patrones (mantener solo los 50 más recientes)
+        if len(system_state['memory_store']['learned_patterns']) > 50:
+            system_state['memory_store']['learned_patterns'] = sorted(
+                system_state['memory_store']['learned_patterns'],
+                key=lambda x: x.get('frequency', 0) * x.get('success_rate', 0),
+                reverse=True
+            )[:50]
+
+    except Exception as e:
+        print(f"⚠️ Error aprendiendo patrón: {e}")
 
 def process_message_with_context(message, sid):
     """Procesar mensaje con contexto de aplicación Flask"""
     try:
         with app.app_context():
             print(f"📨 Procesando mensaje: {message}")
-            
+
             # Análisis NLU
             intents = analyze_intent(message)
             print(f"🧠 Intenciones detectadas: {intents}")
-            
+
             # Generar plan
             plan = generate_plan(message, intents)
             if 'active_plans' not in system_state:
                 system_state['active_plans'] = []
             system_state['active_plans'].append(plan)
             print(f"📋 Plan generado: {plan['title']}")
-            
+
             # Generar respuesta
             response = generate_response(message, plan)
             print(f"💬 Respuesta generada: {response[:100]}...")
-            
+
+            # 💾 GUARDAR CONVERSACIÓN EN MEMORIA
+            conversation_entry = {
+                'id': f'conv_{int(time.time())}_{sid}',
+                'user_message': message,
+                'assistant_response': response,
+                'timestamp': datetime.now().isoformat(),
+                'intents': intents,
+                'plan_generated': plan['id'],
+                'plan_title': plan['title'],
+                'session_id': sid
+            }
+            system_state['memory_store']['conversations'].append(conversation_entry)
+            print(f"💾 Conversación guardada en memoria (ID: {conversation_entry['id']})")
+
+            # 🔍 DETECTAR Y GUARDAR PREFERENCIAS DE USUARIO
+            update_user_preferences(message, intents, sid)
+
             # Emitir eventos con contexto correcto
             print(f"📤 Emitiendo message_response...")
             socketio.emit('message_response', {
@@ -243,23 +452,31 @@ def process_message_with_context(message, sid):
                 'timestamp': datetime.now().isoformat(),
                 'type': 'assistant'
             }, room=sid)
-            
+
             print(f"📤 Emitiendo plan_generated...")
             socketio.emit('plan_generated', {
                 'plan': plan,
                 'timestamp': datetime.now().isoformat()
             }, room=sid)
-            
+
             # Iniciar ejecución automática del plan
             print(f"🚀 Iniciando ejecución automática del plan...")
             execute_plan_automatically(plan, sid)
-            
+
             # Actualizar estado del sistema
             system_state['total_messages'] += 1
             system_state['last_activity'] = datetime.now().isoformat()
-            
+
+            # 📊 EMITIR ACTUALIZACIÓN DE MEMORIA AL FRONTEND
+            socketio.emit('memory_updated', {
+                'memoryStore': system_state['memory_store'],
+                'totalConversations': len(system_state['memory_store']['conversations']),
+                'totalPreferences': len(system_state['memory_store']['user_preferences']),
+                'timestamp': datetime.now().isoformat()
+            }, room=sid)
+
             print(f"✅ Mensaje procesado exitosamente")
-            
+
             # Marcar como no procesando después de generar plan
             print(f"📤 Emitiendo processing_complete...")
             socketio.emit('processing_complete', {
@@ -324,14 +541,16 @@ def execute_plan_automatically(plan, sid):
                         try:
                             step_output = generate_step_output(step, i + 1, len(steps))
                             step['output'] = step_output
-                            print(f"📄 Output generado: {len(step_output)} caracteres")
+                            print(f"📄 Output generado para paso {step['id']}: {len(step_output)} caracteres")
+                            print(f"📄 Primeros 100 chars: {step_output[:100]}...")
                         except Exception as output_error:
                             print(f"❌ Error generando output: {output_error}")
                             step['output'] = f"Error generando output: {str(output_error)}"
-                        
+
                         # Marcar paso como completado
                         step['status'] = 'completed'
-                        
+
+                        print(f"📤 Enviando plan_step_update con output de {len(step.get('output', ''))} caracteres")
                         socketio.emit('plan_step_update', {
                             'plan_id': plan_id,
                             'step_id': step['id'],
@@ -353,6 +572,59 @@ def execute_plan_automatically(plan, sid):
                         }, room=sid)
                         
                         print(f"✅ Paso {i+1}/{len(steps)} completado exitosamente")
+
+                        # 🔄 ANÁLISIS DINÁMICO DEL PASO COMPLETADO
+                        try:
+                            print(f"🔍 Analizando resultados del paso {i+1} para posible expansión...")
+
+                            # Analizar los resultados del paso
+                            step_analysis = analyze_step_results(step, step.get('output', ''), plan)
+
+                            if step_analysis['needs_expansion']:
+                                print(f"🔄 Expansión sugerida: {step_analysis['expansion_reason']}")
+                                print(f"   Confianza: {step_analysis['confidence']:.0%}")
+
+                                # Verificar si debe expandirse el plan
+                                if should_expand_plan(step_analysis, plan):
+                                    print(f"✅ Expandiendo plan dinámicamente...")
+
+                                    # Generar nuevos pasos
+                                    new_steps = generate_dynamic_steps(step_analysis, plan, i)
+
+                                    if new_steps:
+                                        # Añadir nuevos pasos al plan
+                                        plan['steps'].extend(new_steps)
+                                        steps.extend(new_steps)  # También actualizar la lista local
+
+                                        # Notificar al usuario
+                                        notify_plan_expansion(plan, new_steps, step_analysis, sid)
+
+                                        # Emitir actualización del plan completo
+                                        socketio.emit('plan_updated', {
+                                            'plan_id': plan_id,
+                                            'plan': plan,
+                                            'new_steps_added': len(new_steps),
+                                            'expansion_reason': step_analysis['expansion_reason'],
+                                            'timestamp': datetime.now().isoformat()
+                                        }, room=sid)
+
+                                        print(f"🎯 Plan expandido: {len(new_steps)} pasos añadidos")
+                                        print(f"   Total pasos ahora: {len(steps)}")
+                                    else:
+                                        print(f"⚠️ No se pudieron generar pasos dinámicos")
+                                else:
+                                    print(f"❌ Expansión rechazada por criterios de filtrado")
+                                    print(f"   Confianza: {step_analysis['confidence']:.0%} (mín: 0.6)")
+                                    current_dynamic = len([s for s in plan.get('steps', []) if s.get('dynamic', False)])
+                                    print(f"   Pasos dinámicos actuales: {current_dynamic} (máx: 5)")
+                            else:
+                                print(f"✅ No se requiere expansión para este paso")
+
+                        except Exception as analysis_error:
+                            print(f"❌ Error en análisis dinámico: {analysis_error}")
+                            # No interrumpir la ejecución por errores de análisis
+                            import traceback
+                            traceback.print_exc()
                         
                     except Exception as step_error:
                         print(f"❌ Error en paso {i+1}: {step_error}")
@@ -407,7 +679,15 @@ def execute_plan_automatically(plan, sid):
                 print(f"💾 Plan guardado en memoria: {plan['title']}")
                 print(f"📊 Total planes en memoria: {len(system_state['executed_plans'])}")
                 print(f"📄 Outputs guardados: {len([s for s in steps if s.get('output')])}")
-                
+
+                # 🧠 APRENDER DE LA EJECUCIÓN DEL PLAN
+                execution_duration = time.time() - plan.get('start_time', time.time())
+                success_rate = len([s for s in steps if s.get('status') == 'completed']) / len(steps)
+                learn_from_plan_execution(plan, success_rate, execution_duration)
+
+                # 💾 GUARDAR MEMORIA EN DISCO (persistencia)
+                save_memory_to_disk()
+
                 socketio.emit('plan_completed', {
                     'plan_id': plan_id,
                     'status': 'completed',
@@ -415,9 +695,20 @@ def execute_plan_automatically(plan, sid):
                     'message': f"Plan '{plan['title']}' completado exitosamente",
                     'final_summary': final_summary,
                     'total_outputs': len([s for s in steps if s.get('output')]),
-                    'saved_to_memory': True  # Indicar que se guardó en memoria
+                    'saved_to_memory': True,  # Indicar que se guardó en memoria
+                    'success_rate': success_rate,
+                    'execution_duration': execution_duration
                 }, room=sid)
-                
+
+                # 📊 EMITIR ACTUALIZACIÓN DE MEMORIA COMPLETA
+                socketio.emit('memory_updated', {
+                    'memoryStore': system_state['memory_store'],
+                    'executedPlans': system_state['executed_plans'],
+                    'totalConversations': len(system_state['memory_store']['conversations']),
+                    'totalPatterns': len(system_state['memory_store']['learned_patterns']),
+                    'timestamp': datetime.now().isoformat()
+                }, room=sid)
+
                 print(f"🎉 Plan completado exitosamente: {plan['title']}")
                 
         except Exception as e:
@@ -736,6 +1027,163 @@ def get_recent_outputs():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# 🧠 NUEVOS ENDPOINTS DE MEMORIA MEJORADOS
+
+@app.route('/api/memory/conversations', methods=['GET'])
+def get_conversations():
+    """Obtener historial de conversaciones"""
+    try:
+        conversations = system_state['memory_store']['conversations']
+
+        # Filtrar por sesión si se especifica
+        session_id = request.args.get('session_id')
+        if session_id:
+            conversations = [c for c in conversations if c.get('session_id') == session_id]
+
+        # Limitar número de conversaciones
+        limit = int(request.args.get('limit', 50))
+        conversations = conversations[-limit:] if len(conversations) > limit else conversations
+
+        return jsonify({
+            'success': True,
+            'conversations': conversations,
+            'total': len(system_state['memory_store']['conversations']),
+            'filtered': len(conversations),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/preferences', methods=['GET'])
+def get_user_preferences():
+    """Obtener preferencias de usuarios"""
+    try:
+        preferences = system_state['memory_store']['user_preferences']
+
+        # Filtrar por usuario específico si se especifica
+        user_id = request.args.get('user_id')
+        if user_id:
+            user_key = f'user_{user_id}'
+            preferences = {user_key: preferences.get(user_key, {})}
+
+        return jsonify({
+            'success': True,
+            'preferences': preferences,
+            'total_users': len(system_state['memory_store']['user_preferences']),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/patterns', methods=['GET'])
+def get_learned_patterns():
+    """Obtener patrones aprendidos"""
+    try:
+        patterns = system_state['memory_store']['learned_patterns']
+
+        # Ordenar por frecuencia y tasa de éxito
+        patterns_sorted = sorted(
+            patterns,
+            key=lambda x: x.get('frequency', 0) * x.get('success_rate', 0),
+            reverse=True
+        )
+
+        # Limitar número de patrones
+        limit = int(request.args.get('limit', 20))
+        patterns_limited = patterns_sorted[:limit]
+
+        return jsonify({
+            'success': True,
+            'patterns': patterns_limited,
+            'total_patterns': len(patterns),
+            'top_patterns': patterns_limited[:5],
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/stats', methods=['GET'])
+def get_memory_stats():
+    """Obtener estadísticas de memoria"""
+    try:
+        memory_store = system_state['memory_store']
+
+        # Calcular estadísticas
+        total_conversations = len(memory_store['conversations'])
+        total_users = len(memory_store['user_preferences'])
+        total_patterns = len(memory_store['learned_patterns'])
+        total_outputs = len(memory_store['plan_outputs'])
+        total_executed_plans = len(system_state['executed_plans'])
+
+        # Estadísticas de patrones
+        if total_patterns > 0:
+            avg_success_rate = sum(p.get('success_rate', 0) for p in memory_store['learned_patterns']) / total_patterns
+            most_frequent_pattern = max(memory_store['learned_patterns'], key=lambda x: x.get('frequency', 0))
+        else:
+            avg_success_rate = 0
+            most_frequent_pattern = None
+
+        # Tamaño de memoria en disco
+        memory_file_size = 0
+        if os.path.exists(MEMORY_FILE):
+            memory_file_size = os.path.getsize(MEMORY_FILE)
+
+        return jsonify({
+            'success': True,
+            'stats': {
+                'conversations': {
+                    'total': total_conversations,
+                    'recent_24h': len([c for c in memory_store['conversations']
+                                     if (datetime.now() - datetime.fromisoformat(c['timestamp'].replace('Z', '+00:00').replace('+00:00', ''))).days < 1])
+                },
+                'users': {
+                    'total': total_users,
+                    'active_preferences': len([p for p in memory_store['user_preferences'].values() if p])
+                },
+                'patterns': {
+                    'total': total_patterns,
+                    'avg_success_rate': round(avg_success_rate, 2),
+                    'most_frequent': most_frequent_pattern['plan_type'] if most_frequent_pattern else None
+                },
+                'plans': {
+                    'total_executed': total_executed_plans,
+                    'total_outputs': total_outputs
+                },
+                'storage': {
+                    'memory_file_size_bytes': memory_file_size,
+                    'memory_file_size_mb': round(memory_file_size / (1024 * 1024), 2)
+                }
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/backup', methods=['POST'])
+def create_memory_backup():
+    """Crear backup manual de la memoria"""
+    try:
+        backup_filename = f"synapse_memory_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+
+        memory_data = {
+            'memory_store': system_state['memory_store'],
+            'executed_plans': system_state['executed_plans'],
+            'backup_created': datetime.now().isoformat(),
+            'version': '2.3.0'
+        }
+
+        with open(backup_filename, 'w', encoding='utf-8') as f:
+            json.dump(memory_data, f, indent=2, ensure_ascii=False)
+
+        return jsonify({
+            'success': True,
+            'backup_file': backup_filename,
+            'file_size_bytes': os.path.getsize(backup_filename),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     print("🚀 Iniciando Synapse Server v2.3.0...")
@@ -747,7 +1195,18 @@ if __name__ == '__main__':
     print(f"   - Herramientas MCP: {len(get_consolidated_mcp_tools())}")
     print(f"   - Herramientas Core: {len(core_tools)}")
     print(f"   - Memoria persistente: Habilitada")
+
+    # 💾 CARGAR MEMORIA DESDE DISCO AL INICIAR
+    print("💾 Cargando memoria persistente...")
+    if load_memory_from_disk():
+        print("✅ Memoria cargada exitosamente")
+    else:
+        print("📝 Iniciando con memoria nueva")
+
+    # 🔄 INICIAR AUTO-GUARDADO DE MEMORIA
+    auto_save_memory()
+
     print("✅ Servidor listo para recibir conexiones")
-    
+
     socketio.run(app, host='0.0.0.0', port=5000, debug=False)
 

@@ -57,14 +57,15 @@ const actionTypes = {
   // Conexión
   SET_CONNECTION_STATUS: 'SET_CONNECTION_STATUS',
   SET_CONNECTED: 'SET_CONNECTED',
-  
+
   // Mensajes
   ADD_MESSAGE: 'ADD_MESSAGE',
   SET_CURRENT_INPUT: 'SET_CURRENT_INPUT',
   SET_PROCESSING: 'SET_PROCESSING',
-  
+
   // Planificación
   SET_CURRENT_PLAN: 'SET_CURRENT_PLAN',
+  UPDATE_CURRENT_PLAN: 'UPDATE_CURRENT_PLAN',
   UPDATE_PLAN_STEP: 'UPDATE_PLAN_STEP',
   UPDATE_PLAN_PROGRESS: 'UPDATE_PLAN_PROGRESS',
   UPDATE_STEP_OUTPUT: 'UPDATE_STEP_OUTPUT',
@@ -75,14 +76,14 @@ const actionTypes = {
   COMPLETE_PLAN: 'COMPLETE_PLAN',
   SET_PLAN_ERROR: 'SET_PLAN_ERROR',
   SET_PLAN_STATUS: 'SET_PLAN_STATUS',
-  
+
   // Herramientas
   SET_AVAILABLE_TOOLS: 'SET_AVAILABLE_TOOLS',
   ADD_TOOL_EXECUTION: 'ADD_TOOL_EXECUTION',
-  
+
   // Sistema
   UPDATE_SYSTEM_STATUS: 'UPDATE_SYSTEM_STATUS',
-  
+
   // Errores y notificaciones
   ADD_ERROR: 'ADD_ERROR',
   CLEAR_ERRORS: 'CLEAR_ERRORS',
@@ -133,20 +134,34 @@ const synapseReducer = (state, action) => {
         currentStepIndex: 0,
         planStatus: 'idle',
       };
-      
-    case actionTypes.UPDATE_PLAN_STEP:
+
+    case actionTypes.UPDATE_CURRENT_PLAN:
       return {
         ...state,
-        planSteps: state.planSteps.map(step =>
-          step.id === action.payload.step_id
-            ? { 
-                ...step, 
-                status: action.payload.status, 
-                message: action.payload.message,
-                output: action.payload.output || step.output  // Preservar output existente o añadir nuevo
-              }
-            : step
-        ),
+        currentPlan: action.payload,
+        planSteps: action.payload?.steps || [],
+      };
+      
+    case actionTypes.UPDATE_PLAN_STEP:
+      console.log('🔄 UPDATE_PLAN_STEP - Payload:', action.payload);
+      console.log('🔄 Estado actual planSteps:', state.planSteps.map(s => ({ id: s.id, title: s.title, status: s.status, hasOutput: !!s.output })));
+
+      const updatedSteps = state.planSteps.map(step =>
+        step.id === action.payload.step_id
+          ? {
+              ...step,
+              status: action.payload.status,
+              message: action.payload.message,
+              output: action.payload.output || step.output  // Preservar output existente o añadir nuevo
+            }
+          : step
+      );
+
+      console.log('🔄 Pasos actualizados:', updatedSteps.map(s => ({ id: s.id, title: s.title, status: s.status, hasOutput: !!s.output, outputLength: s.output?.length || 0 })));
+
+      return {
+        ...state,
+        planSteps: updatedSteps,
       };
       
     case actionTypes.UPDATE_PLAN_PROGRESS:
@@ -291,7 +306,7 @@ const synapseReducer = (state, action) => {
 const SynapseContext = createContext();
 
 // URL del backend
-const BACKEND_URL = 'https://5000-itcsuhehi0bk40bfz4mii-984c0f23.manus.computer';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
 // Proveedor del contexto
 export const SynapseProvider = ({ children }) => {
@@ -523,17 +538,20 @@ export const SynapseProvider = ({ children }) => {
 
     socket.on('plan_step_update', (data) => {
       console.log('📊 Step update recibido:', data);
-      
+      console.log('📊 Datos completos del step update:', JSON.stringify(data, null, 2));
+
       dispatch({
         type: actionTypes.UPDATE_PLAN_STEP,
         payload: data,
       });
-      
-      // Log para debugging
+
+      // Log detallado para debugging
       if (data.output) {
         console.log('📄 Output detectado en step update:', data.output.length, 'caracteres');
+        console.log('📄 Primeros 200 chars del output:', data.output.substring(0, 200));
       } else {
         console.log('⚠️ No hay output en step update');
+        console.log('⚠️ Campos disponibles:', Object.keys(data));
       }
     });
 
@@ -570,6 +588,55 @@ export const SynapseProvider = ({ children }) => {
           message: data.message || 'Plan completado exitosamente',
         },
       });
+    });
+
+    // Eventos del sistema
+    // 🔄 Evento para expansión dinámica de planes
+    socket.on('plan_expansion_notification', (data) => {
+      console.log('🔄 Plan expandido dinámicamente:', data);
+
+      // Actualizar notificaciones
+      dispatch({
+        type: actionTypes.ADD_NOTIFICATION,
+        payload: {
+          type: 'info',
+          message: `Plan expandido: ${data.expansion_reason}`,
+          details: `Se añadieron ${data.new_steps_count} pasos adicionales`,
+        },
+      });
+
+      // Actualizar el plan actual si coincide
+      if (data.plan_id && currentPlan && currentPlan.id === data.plan_id) {
+        dispatch({
+          type: actionTypes.UPDATE_CURRENT_PLAN,
+          payload: data.updated_plan
+        });
+      }
+    });
+
+    // 🔄 Evento para actualización completa del plan
+    socket.on('plan_updated', (data) => {
+      console.log('📋 Plan actualizado:', data);
+
+      // Actualizar el plan actual
+      if (data.plan) {
+        dispatch({
+          type: actionTypes.UPDATE_CURRENT_PLAN,
+          payload: data.plan
+        });
+      }
+
+      // Notificar sobre la expansión
+      if (data.new_steps_added > 0) {
+        dispatch({
+          type: actionTypes.ADD_NOTIFICATION,
+          payload: {
+            type: 'success',
+            message: `Plan expandido automáticamente`,
+            details: `${data.new_steps_added} pasos añadidos: ${data.expansion_reason}`,
+          },
+        });
+      }
     });
 
     // Eventos del sistema
