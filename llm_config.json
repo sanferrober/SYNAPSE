@@ -1,0 +1,8 @@
+{
+  "conversation_agent": "claude-3-opus",
+  "planning_agent": "gpt-4",
+  "execution_agent": "gemini-flash",
+  "analysis_agent": "gpt-4",
+  "memory_agent": "gpt-3.5-turbo",
+  "optimization_agent": "claude-3-sonnet"
+}

@@ -801,6 +801,148 @@ def handle_message(data):
     thread.start()
     print(f"🧵 Hilo de procesamiento iniciado para mensaje: {message[:50]}...")
 
+# ========================================
+# 🤖 HANDLERS DE CONFIGURACIÓN DE LLMS
+# ========================================
+
+# Configuración por defecto de LLMs
+DEFAULT_LLM_CONFIG = {
+    'conversation_agent': 'gpt-4',
+    'planning_agent': 'gpt-4',
+    'execution_agent': 'gpt-3.5-turbo',
+    'analysis_agent': 'gpt-4',
+    'memory_agent': 'gpt-3.5-turbo',
+    'optimization_agent': 'claude-3-sonnet'
+}
+
+# Estado global de configuración LLM
+llm_config = DEFAULT_LLM_CONFIG.copy()
+
+@socketio.on('get_llm_config')
+def handle_get_llm_config():
+    """Obtener configuración actual de LLMs"""
+    print(f"📋 Solicitando configuración LLM para cliente {request.sid}")
+    emit('llm_config_response', llm_config)
+
+@socketio.on('update_llm_config')
+def handle_update_llm_config(data):
+    """Actualizar configuración de LLMs"""
+    global llm_config
+
+    try:
+        print(f"🔄 Actualizando configuración LLM: {data}")
+
+        # Validar que los agentes existen
+        valid_agents = set(DEFAULT_LLM_CONFIG.keys())
+        for agent_id in data.keys():
+            if agent_id not in valid_agents:
+                raise ValueError(f"Agente inválido: {agent_id}")
+
+        # Actualizar configuración
+        llm_config.update(data)
+
+        # Guardar configuración (aquí podrías persistir en archivo/DB)
+        save_llm_config_to_disk()
+
+        print(f"✅ Configuración LLM actualizada: {llm_config}")
+        emit('llm_config_updated', {
+            'success': True,
+            'config': llm_config,
+            'timestamp': datetime.now().isoformat()
+        })
+
+        # Notificar a todos los clientes conectados
+        socketio.emit('llm_config_response', llm_config)
+
+    except Exception as e:
+        print(f"❌ Error actualizando configuración LLM: {e}")
+        emit('llm_config_updated', {
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        })
+
+@socketio.on('test_llm_connection')
+def handle_test_llm_connection(data):
+    """Probar conexión con un LLM específico"""
+    llm_id = data.get('llm_id')
+
+    try:
+        print(f"🧪 Probando conexión con LLM: {llm_id}")
+
+        # Simular test de conexión (aquí implementarías la lógica real)
+        success = test_llm_connection_real(llm_id)
+
+        emit('llm_test_result', {
+            'llm_id': llm_id,
+            'success': success,
+            'timestamp': datetime.now().isoformat(),
+            'error': None if success else f"No se pudo conectar con {llm_id}"
+        })
+
+    except Exception as e:
+        print(f"❌ Error probando LLM {llm_id}: {e}")
+        emit('llm_test_result', {
+            'llm_id': llm_id,
+            'success': False,
+            'timestamp': datetime.now().isoformat(),
+            'error': str(e)
+        })
+
+def test_llm_connection_real(llm_id):
+    """
+    Función para probar conexión real con LLM
+    Aquí implementarías la lógica específica para cada proveedor
+    """
+    # Simulación - en producción harías llamadas reales a las APIs
+    import random
+    import time
+
+    time.sleep(1)  # Simular latencia
+
+    # Simular diferentes tasas de éxito según el LLM
+    success_rates = {
+        'gpt-4': 0.95,
+        'gpt-3.5-turbo': 0.98,
+        'claude-3-opus': 0.90,
+        'claude-3-sonnet': 0.92,
+        'claude-3-haiku': 0.95,
+        'gemini-pro': 0.88,
+        'gemini-flash': 0.93
+    }
+
+    rate = success_rates.get(llm_id, 0.85)
+    return random.random() < rate
+
+def save_llm_config_to_disk():
+    """Guardar configuración LLM en disco"""
+    try:
+        config_file = 'llm_config.json'
+        with open(config_file, 'w', encoding='utf-8') as f:
+            json.dump(llm_config, f, indent=2, ensure_ascii=False)
+        print(f"💾 Configuración LLM guardada en {config_file}")
+    except Exception as e:
+        print(f"❌ Error guardando configuración LLM: {e}")
+
+def load_llm_config_from_disk():
+    """Cargar configuración LLM desde disco"""
+    global llm_config
+    try:
+        config_file = 'llm_config.json'
+        if os.path.exists(config_file):
+            with open(config_file, 'r', encoding='utf-8') as f:
+                loaded_config = json.load(f)
+                llm_config.update(loaded_config)
+            print(f"📂 Configuración LLM cargada desde {config_file}")
+            return True
+    except Exception as e:
+        print(f"❌ Error cargando configuración LLM: {e}")
+    return False
+
+def get_llm_for_agent(agent_type):
+    """Obtener el LLM configurado para un agente específico"""
+    return llm_config.get(agent_type, DEFAULT_LLM_CONFIG.get(agent_type, 'gpt-3.5-turbo'))
+
 # API REST Endpoints
 @app.route('/api/health', methods=['GET'])
 def health_check():

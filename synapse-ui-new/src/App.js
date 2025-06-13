@@ -7,6 +7,7 @@ import MCPToolsPanel from './components/MCPToolsPanel';
 import MemoryPanel from './components/MemoryPanel';
 import OutputsPanel from './components/OutputsPanel';
 import DebugPanel from './components/DebugPanel';
+import LLMSelector from './components/LLMSelector';
 import StatusBar from './components/StatusBar';
 import {
   MessageSquare,
@@ -19,7 +20,8 @@ import {
   X,
   Maximize2,
   Minimize2,
-  Bug
+  Bug,
+  Cpu
 } from 'lucide-react';
 
 // Componente interno que usa el contexto
@@ -27,7 +29,7 @@ function AppContent() {
   const [activePanel, setActivePanel] = useState('conversation');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   // Obtener datos del contexto de Synapse
   const { currentPlan, planSteps } = useSynapse();
 
@@ -67,6 +69,12 @@ function AppContent() {
       name: 'Memoria',
       icon: Brain,
       component: MemoryPanel,
+    },
+    {
+      id: 'llm-config',
+      name: 'LLM Config',
+      icon: Cpu,
+      component: LLMSelector,
     },
     {
       id: 'debug',

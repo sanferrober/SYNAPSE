@@ -46,7 +46,17 @@ const initialState = {
     showDetailedLogs: true,
     theme: 'light',
   },
-  
+
+  // Configuración de LLMs
+  llmConfig: {
+    conversation_agent: 'gpt-4',
+    planning_agent: 'gpt-4',
+    execution_agent: 'gpt-3.5-turbo',
+    analysis_agent: 'gpt-4',
+    memory_agent: 'gpt-3.5-turbo',
+    optimization_agent: 'claude-3-sonnet'
+  },
+
   // Errores y notificaciones
   errors: [],
   notifications: [],
@@ -83,6 +93,10 @@ const actionTypes = {
 
   // Sistema
   UPDATE_SYSTEM_STATUS: 'UPDATE_SYSTEM_STATUS',
+
+  // Configuración de LLMs
+  SET_LLM_CONFIG: 'SET_LLM_CONFIG',
+  UPDATE_LLM_CONFIG: 'UPDATE_LLM_CONFIG',
 
   // Errores y notificaciones
   ADD_ERROR: 'ADD_ERROR',
@@ -272,7 +286,22 @@ const synapseReducer = (state, action) => {
           activeTasks: action.payload.active_connections || action.payload.activeTasks || 0,
         },
       };
-      
+
+    case actionTypes.SET_LLM_CONFIG:
+      return {
+        ...state,
+        llmConfig: action.payload,
+      };
+
+    case actionTypes.UPDATE_LLM_CONFIG:
+      return {
+        ...state,
+        llmConfig: {
+          ...state.llmConfig,
+          ...action.payload,
+        },
+      };
+
     case actionTypes.ADD_ERROR:
       return {
         ...state,
@@ -652,6 +681,56 @@ export const SynapseProvider = ({ children }) => {
       dispatch({
         type: actionTypes.SET_CONNECTION_STATUS,
         payload: data.status,
+      });
+    });
+
+    // Eventos de configuración de LLMs
+    socket.on('llm_config_response', (config) => {
+      console.log('🤖 Configuración LLM recibida:', config);
+      dispatch({
+        type: actionTypes.SET_LLM_CONFIG,
+        payload: config,
+      });
+    });
+
+    socket.on('llm_config_updated', (response) => {
+      console.log('🤖 Configuración LLM actualizada:', response);
+      if (response.success) {
+        dispatch({
+          type: actionTypes.ADD_NOTIFICATION,
+          payload: {
+            id: Date.now(),
+            type: 'success',
+            message: 'Configuración de LLMs actualizada correctamente',
+            timestamp: new Date().toISOString(),
+          },
+        });
+      } else {
+        dispatch({
+          type: actionTypes.ADD_ERROR,
+          payload: {
+            id: Date.now(),
+            message: `Error al actualizar configuración LLM: ${response.error}`,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+    });
+
+    socket.on('llm_test_result', (result) => {
+      console.log('🧪 Resultado test LLM:', result);
+      const message = result.success
+        ? `✅ ${result.llm_id}: Conexión exitosa`
+        : `❌ ${result.llm_id}: ${result.error}`;
+
+      dispatch({
+        type: actionTypes.ADD_NOTIFICATION,
+        payload: {
+          id: Date.now(),
+          type: result.success ? 'success' : 'error',
+          message: message,
+          timestamp: new Date().toISOString(),
+        },
       });
     });
 
