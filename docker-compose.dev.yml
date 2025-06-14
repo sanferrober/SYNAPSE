@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=synapse_server_final.py
+      - FLASK_DEBUG=1
+    command: python -u synapse_server_final.py
+    restart: unless-stopped
+    networks:
+      - synapse-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./synapse-ui-new:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_BACKEND_URL=http://localhost:5000
+      - CHOKIDAR_USEPOLLING=true
+    command: npm start
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - synapse-network
+
+networks:
+  synapse-network:
+    driver: bridge

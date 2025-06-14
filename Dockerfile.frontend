@@ -1,0 +1,33 @@
+FROM node:18-alpine as build
+
+WORKDIR /app
+
+# Copiar archivos de configuraciu00f3n de dependencias
+COPY synapse-ui-new/package.json synapse-ui-new/package-lock.json* ./
+
+# Instalar dependencias
+RUN npm install
+
+# Copiar el cu00f3digo fuente
+COPY synapse-ui-new/ ./
+
+# Copiar archivos de entorno
+COPY synapse-ui-new/.env.production ./.env.production
+
+# Construir la aplicaciu00f3n para producciu00f3n
+RUN npm run build
+
+# Etapa de producciu00f3n con Nginx
+FROM nginx:alpine
+
+# Copiar la configuraciu00f3n de nginx
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copiar los archivos de construcciu00f3n desde la etapa anterior
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Exponer el puerto que utiliza nginx
+EXPOSE 80
+
+# Comando para iniciar nginx
+CMD ["nginx", "-g", "daemon off;"]

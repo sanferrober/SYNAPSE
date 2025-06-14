@@ -335,7 +335,7 @@ const synapseReducer = (state, action) => {
 const SynapseContext = createContext();
 
 // URL del backend
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : `http://${window.location.hostname}:5000`);
 
 // Proveedor del contexto
 export const SynapseProvider = ({ children }) => {
