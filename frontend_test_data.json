@@ -1,0 +1,133 @@
+{
+  "plan_generated": {
+    "plan": {
+      "id": "plan_1749943102",
+      "title": "Plan de Asistencia General",
+      "description": "Plan personalizado basado en tu solicitud",
+      "status": "active",
+      "progress": 0,
+      "steps": [
+        {
+          "id": 1,
+          "title": "Análisis de Solicitud",
+          "description": "Entender los requisitos específicos",
+          "status": "completed",
+          "estimated_time": "15-30 minutos",
+          "tools": [
+            "task_planner"
+          ],
+          "output": "📊 ANÁLISIS COMPLETADO - Paso 1/3\n\n🔍 Investigación realizada: Análisis de Solicitud\n📋 Descripción: Entender los requisitos específicos\n\n📈 Resultados del análisis:\n• Se identificaron 3 componentes principales\n• Evaluación de viabilidad: 85% positiva\n• Recursos necesarios: Estimados y documentados\n• Riesgos identificados: 2 menores, 0 críticos\n\n📄 Documentación generada:\n- Reporte de análisis (2.3 KB)\n- Matriz de evaluación\n- Recomendaciones de implementación\n\n✅ Estado: Completado exitosamente\n⏱️ Tiempo de ejecución: 4.1 segundos\n🔗 Siguiente paso: Preparado para continuar\n\n🔧 **RESULTADOS DE HERRAMIENTAS:**\n\n✅ **Planificador de Tareas**:\n📋 Planificación de Tareas Completada\n\n🎯 Contexto: Análisis de Solicitud\n📊 Subtareas identificadas: 13\n⏱️ Tiempo de planificación: 1.62s\n\n📈 Plan de ejecución:\n• Tareas críticas: 3\n• Tareas de alta prioridad: 6\n• Tareas de prioridad media: 8\n• Dependencias identificadas: 4\n\n⏰ Estimaciones de tiempo:\n• Tiempo total estimado: 23 horas\n• Paralelización posible: 53%\n• Recursos necesarios: 5 desarrolladores\n\n✅ Planificación completada exitosamente\n⏱️ Tiempo de ejecución: 1.62s\n"
+        },
+        {
+          "id": 2,
+          "title": "Investigación",
+          "description": "Buscar información relevante",
+          "status": "completed",
+          "estimated_time": "30-60 minutos",
+          "tools": [
+            "web_search"
+          ],
+          "output": "📋 TAREA COMPLETADA - Paso 2/3\n\n🎯 Tarea ejecutada: Investigación\n📝 Detalles: Buscar información relevante\n\n🔄 Acciones realizadas:\n• Procesamiento de datos: ✅ Completado\n• Validación de resultados: ✅ Exitosa\n• Generación de outputs: ✅ Finalizada\n• Actualización de estado: ✅ Realizada\n\n📊 Métricas de ejecución:\n- Elementos procesados: 136\n- Errores encontrados: 0\n- Warnings: 2\n- Optimizaciones aplicadas: 2\n\n✅ Estado: Tarea completada satisfactoriamente\n⏱️ Tiempo de ejecución: 3.5 segundos\n📈 Eficiencia: 97%\n\n🔧 **RESULTADOS DE HERRAMIENTAS:**\n\n✅ **Búsqueda Web**:\n🔍 Búsqueda Web Completada\n\n📝 Consulta: \"Buscar información relevante\"\n📊 Resultados encontrados: 142\n⏱️ Tiempo de respuesta: 0.91s\n\n🎯 Resultados principales:\n• Documentación oficial y guías técnicas\n• Tutoriales y ejemplos prácticos\n• Foros de desarrolladores y Stack Overflow\n• Repositorios de GitHub relacionados\n• Artículos técnicos y blogs especializados\n\n✅ Información recopilada exitosamente\n⏱️ Tiempo de ejecución: 2.1s\n"
+        },
+        {
+          "id": 3,
+          "title": "Implementación",
+          "description": "Ejecutar la solución propuesta",
+          "status": "completed",
+          "estimated_time": "1-2 horas",
+          "tools": [
+            "code_generator",
+            "data_analyzer"
+          ],
+          "output": "📋 TAREA COMPLETADA - Paso 3/3\n\n🎯 Tarea ejecutada: Implementación\n📝 Detalles: Ejecutar la solución propuesta\n\n🔄 Acciones realizadas:\n• Procesamiento de datos: ✅ Completado\n• Validación de resultados: ✅ Exitosa\n• Generación de outputs: ✅ Finalizada\n• Actualización de estado: ✅ Realizada\n\n📊 Métricas de ejecución:\n- Elementos procesados: 63\n- Errores encontrados: 0\n- Warnings: 3\n- Optimizaciones aplicadas: 5\n\n✅ Estado: Tarea completada satisfactoriamente\n⏱️ Tiempo de ejecución: 3.1 segundos\n📈 Eficiencia: 87%\n\n🔧 **RESULTADOS DE HERRAMIENTAS:**\n\n✅ **Generador de Código**:\n💻 Generación de Código Completada\n\n🎯 Tarea: Implementación\n📝 Líneas de código generadas: 146\n⏱️ Tiempo de generación: 1.04s\n\n🔧 Componentes generados:\n• Funciones principales: 8\n• Clases y métodos: 6\n• Tests unitarios: 7\n• Documentación: Incluida\n• Validaciones: Implementadas\n\n📊 Calidad del código:\n• Cobertura de tests: 92%\n• Complejidad ciclomática: 3.2\n• Estándares de codificación: ✅ Cumplidos\n\n✅ Código generado exitosamente\n⏱️ Tiempo de ejecución: 1.04s\n\n✅ **Analizador de Datos**:\n📊 Análisis de Datos Completado\n\n🔍 Análisis realizado: Implementación\n📈 Registros procesados: 3264\n⏱️ Tiempo de procesamiento: 1.40s\n\n📋 Resultados del análisis:\n• Patrones identificados: 10\n• Anomalías detectadas: 2\n• Correlaciones encontradas: 3\n• Precisión del modelo: 93.8%\n• Métricas de calidad: 8.2/10\n\n✅ Análisis completado exitosamente\n⏱️ Tiempo de ejecución: 1.4s\n"
+        }
+      ],
+      "total_estimated_time": "2-3 horas",
+      "created_at": "2025-06-14T23:18:22.728138"
+    },
+    "timestamp": "2025-06-14T23:18:22.729042"
+  },
+  "plan_steps": [
+    {
+      "id": 1,
+      "title": "Análisis de Solicitud",
+      "description": "Entender los requisitos específicos",
+      "status": "completed",
+      "estimated_time": "15-30 minutos",
+      "tools": [
+        "task_planner"
+      ],
+      "output": "📊 ANÁLISIS COMPLETADO - Paso 1/3\n\n🔍 Investigación realizada: Análisis de Solicitud\n📋 Descripción: Entender los requisitos específicos\n\n📈 Resultados del análisis:\n• Se identificaron 3 componentes principales\n• Evaluación de viabilidad: 85% positiva\n• Recursos necesarios: Estimados y documentados\n• Riesgos identificados: 2 menores, 0 críticos\n\n📄 Documentación generada:\n- Reporte de análisis (2.3 KB)\n- Matriz de evaluación\n- Recomendaciones de implementación\n\n✅ Estado: Completado exitosamente\n⏱️ Tiempo de ejecución: 4.1 segundos\n🔗 Siguiente paso: Preparado para continuar\n\n🔧 **RESULTADOS DE HERRAMIENTAS:**\n\n✅ **Planificador de Tareas**:\n📋 Planificación de Tareas Completada\n\n🎯 Contexto: Análisis de Solicitud\n📊 Subtareas identificadas: 13\n⏱️ Tiempo de planificación: 1.62s\n\n📈 Plan de ejecución:\n• Tareas críticas: 3\n• Tareas de alta prioridad: 6\n• Tareas de prioridad media: 8\n• Dependencias identificadas: 4\n\n⏰ Estimaciones de tiempo:\n• Tiempo total estimado: 23 horas\n• Paralelización posible: 53%\n• Recursos necesarios: 5 desarrolladores\n\n✅ Planificación completada exitosamente\n⏱️ Tiempo de ejecución: 1.62s\n"
+    },
+    {
+      "id": 2,
+      "title": "Investigación",
+      "description": "Buscar información relevante",
+      "status": "completed",
+      "estimated_time": "30-60 minutos",
+      "tools": [
+        "web_search"
+      ],
+      "output": "📋 TAREA COMPLETADA - Paso 2/3\n\n🎯 Tarea ejecutada: Investigación\n📝 Detalles: Buscar información relevante\n\n🔄 Acciones realizadas:\n• Procesamiento de datos: ✅ Completado\n• Validación de resultados: ✅ Exitosa\n• Generación de outputs: ✅ Finalizada\n• Actualización de estado: ✅ Realizada\n\n📊 Métricas de ejecución:\n- Elementos procesados: 136\n- Errores encontrados: 0\n- Warnings: 2\n- Optimizaciones aplicadas: 2\n\n✅ Estado: Tarea completada satisfactoriamente\n⏱️ Tiempo de ejecución: 3.5 segundos\n📈 Eficiencia: 97%\n\n🔧 **RESULTADOS DE HERRAMIENTAS:**\n\n✅ **Búsqueda Web**:\n🔍 Búsqueda Web Completada\n\n📝 Consulta: \"Buscar información relevante\"\n📊 Resultados encontrados: 142\n⏱️ Tiempo de respuesta: 0.91s\n\n🎯 Resultados principales:\n• Documentación oficial y guías técnicas\n• Tutoriales y ejemplos prácticos\n• Foros de desarrolladores y Stack Overflow\n• Repositorios de GitHub relacionados\n• Artículos técnicos y blogs especializados\n\n✅ Información recopilada exitosamente\n⏱️ Tiempo de ejecución: 2.1s\n"
+    },
+    {
+      "id": 3,
+      "title": "Implementación",
+      "description": "Ejecutar la solución propuesta",
+      "status": "completed",
+      "estimated_time": "1-2 horas",
+      "tools": [
+        "code_generator",
+        "data_analyzer"
+      ],
+      "output": "📋 TAREA COMPLETADA - Paso 3/3\n\n🎯 Tarea ejecutada: Implementación\n📝 Detalles: Ejecutar la solución propuesta\n\n🔄 Acciones realizadas:\n• Procesamiento de datos: ✅ Completado\n• Validación de resultados: ✅ Exitosa\n• Generación de outputs: ✅ Finalizada\n• Actualización de estado: ✅ Realizada\n\n📊 Métricas de ejecución:\n- Elementos procesados: 63\n- Errores encontrados: 0\n- Warnings: 3\n- Optimizaciones aplicadas: 5\n\n✅ Estado: Tarea completada satisfactoriamente\n⏱️ Tiempo de ejecución: 3.1 segundos\n📈 Eficiencia: 87%\n\n🔧 **RESULTADOS DE HERRAMIENTAS:**\n\n✅ **Generador de Código**:\n💻 Generación de Código Completada\n\n🎯 Tarea: Implementación\n📝 Líneas de código generadas: 146\n⏱️ Tiempo de generación: 1.04s\n\n🔧 Componentes generados:\n• Funciones principales: 8\n• Clases y métodos: 6\n• Tests unitarios: 7\n• Documentación: Incluida\n• Validaciones: Implementadas\n\n📊 Calidad del código:\n• Cobertura de tests: 92%\n• Complejidad ciclomática: 3.2\n• Estándares de codificación: ✅ Cumplidos\n\n✅ Código generado exitosamente\n⏱️ Tiempo de ejecución: 1.04s\n\n✅ **Analizador de Datos**:\n📊 Análisis de Datos Completado\n\n🔍 Análisis realizado: Implementación\n📈 Registros procesados: 3264\n⏱️ Tiempo de procesamiento: 1.40s\n\n📋 Resultados del análisis:\n• Patrones identificados: 10\n• Anomalías detectadas: 2\n• Correlaciones encontradas: 3\n• Precisión del modelo: 93.8%\n• Métricas de calidad: 8.2/10\n\n✅ Análisis completado exitosamente\n⏱️ Tiempo de ejecución: 1.4s\n"
+    }
+  ],
+  "step_updates": [
+    {
+      "plan_id": "plan_1749943102",
+      "step_id": 1,
+      "status": "in_progress",
+      "timestamp": "2025-06-14T23:18:22.731465",
+      "message": "Ejecutando: Análisis de Solicitud"
+    },
+    {
+      "plan_id": "plan_1749943102",
+      "step_id": 1,
+      "status": "completed",
+      "timestamp": "2025-06-14T23:18:26.305679",
+      "message": "Completado: Análisis de Solicitud",
+      "output": "📊 ANÁLISIS COMPLETADO - Paso 1/3\n\n🔍 Investigación realizada: Análisis de Solicitud\n📋 Descripción: Entender los requisitos específicos\n\n📈 Resultados del análisis:\n• Se identificaron 3 componentes principales\n• Evaluación de viabilidad: 85% positiva\n• Recursos necesarios: Estimados y documentados\n• Riesgos identificados: 2 menores, 0 críticos\n\n📄 Documentación generada:\n- Reporte de análisis (2.3 KB)\n- Matriz de evaluación\n- Recomendaciones de implementación\n\n✅ Estado: Completado exitosamente\n⏱️ Tiempo de ejecución: 4.1 segundos\n🔗 Siguiente paso: Preparado para continuar\n\n🔧 **RESULTADOS DE HERRAMIENTAS:**\n\n✅ **Planificador de Tareas**:\n📋 Planificación de Tareas Completada\n\n🎯 Contexto: Análisis de Solicitud\n📊 Subtareas identificadas: 13\n⏱️ Tiempo de planificación: 1.62s\n\n📈 Plan de ejecución:\n• Tareas críticas: 3\n• Tareas de alta prioridad: 6\n• Tareas de prioridad media: 8\n• Dependencias identificadas: 4\n\n⏰ Estimaciones de tiempo:\n• Tiempo total estimado: 23 horas\n• Paralelización posible: 53%\n• Recursos necesarios: 5 desarrolladores\n\n✅ Planificación completada exitosamente\n⏱️ Tiempo de ejecución: 1.62s\n"
+    },
+    {
+      "plan_id": "plan_1749943102",
+      "step_id": 2,
+      "status": "in_progress",
+      "timestamp": "2025-06-14T23:18:26.306735",
+      "message": "Ejecutando: Investigación"
+    },
+    {
+      "plan_id": "plan_1749943102",
+      "step_id": 2,
+      "status": "completed",
+      "timestamp": "2025-06-14T23:18:29.429587",
+      "message": "Completado: Investigación",
+      "output": "📋 TAREA COMPLETADA - Paso 2/3\n\n🎯 Tarea ejecutada: Investigación\n📝 Detalles: Buscar información relevante\n\n🔄 Acciones realizadas:\n• Procesamiento de datos: ✅ Completado\n• Validación de resultados: ✅ Exitosa\n• Generación de outputs: ✅ Finalizada\n• Actualización de estado: ✅ Realizada\n\n📊 Métricas de ejecución:\n- Elementos procesados: 136\n- Errores encontrados: 0\n- Warnings: 2\n- Optimizaciones aplicadas: 2\n\n✅ Estado: Tarea completada satisfactoriamente\n⏱️ Tiempo de ejecución: 3.5 segundos\n📈 Eficiencia: 97%\n\n🔧 **RESULTADOS DE HERRAMIENTAS:**\n\n✅ **Búsqueda Web**:\n🔍 Búsqueda Web Completada\n\n📝 Consulta: \"Buscar información relevante\"\n📊 Resultados encontrados: 142\n⏱️ Tiempo de respuesta: 0.91s\n\n🎯 Resultados principales:\n• Documentación oficial y guías técnicas\n• Tutoriales y ejemplos prácticos\n• Foros de desarrolladores y Stack Overflow\n• Repositorios de GitHub relacionados\n• Artículos técnicos y blogs especializados\n\n✅ Información recopilada exitosamente\n⏱️ Tiempo de ejecución: 2.1s\n"
+    },
+    {
+      "plan_id": "plan_1749943102",
+      "step_id": 3,
+      "status": "in_progress",
+      "timestamp": "2025-06-14T23:18:29.431225",
+      "message": "Ejecutando: Implementación"
+    },
+    {
+      "plan_id": "plan_1749943102",
+      "step_id": 3,
+      "status": "completed",
+      "timestamp": "2025-06-14T23:18:34.048545",
+      "message": "Completado: Implementación",
+      "output": "📋 TAREA COMPLETADA - Paso 3/3\n\n🎯 Tarea ejecutada: Implementación\n📝 Detalles: Ejecutar la solución propuesta\n\n🔄 Acciones realizadas:\n• Procesamiento de datos: ✅ Completado\n• Validación de resultados: ✅ Exitosa\n• Generación de outputs: ✅ Finalizada\n• Actualización de estado: ✅ Realizada\n\n📊 Métricas de ejecución:\n- Elementos procesados: 63\n- Errores encontrados: 0\n- Warnings: 3\n- Optimizaciones aplicadas: 5\n\n✅ Estado: Tarea completada satisfactoriamente\n⏱️ Tiempo de ejecución: 3.1 segundos\n📈 Eficiencia: 87%\n\n🔧 **RESULTADOS DE HERRAMIENTAS:**\n\n✅ **Generador de Código**:\n💻 Generación de Código Completada\n\n🎯 Tarea: Implementación\n📝 Líneas de código generadas: 146\n⏱️ Tiempo de generación: 1.04s\n\n🔧 Componentes generados:\n• Funciones principales: 8\n• Clases y métodos: 6\n• Tests unitarios: 7\n• Documentación: Incluida\n• Validaciones: Implementadas\n\n📊 Calidad del código:\n• Cobertura de tests: 92%\n• Complejidad ciclomática: 3.2\n• Estándares de codificación: ✅ Cumplidos\n\n✅ Código generado exitosamente\n⏱️ Tiempo de ejecución: 1.04s\n\n✅ **Analizador de Datos**:\n📊 Análisis de Datos Completado\n\n🔍 Análisis realizado: Implementación\n📈 Registros procesados: 3264\n⏱️ Tiempo de procesamiento: 1.40s\n\n📋 Resultados del análisis:\n• Patrones identificados: 10\n• Anomalías detectadas: 2\n• Correlaciones encontradas: 3\n• Precisión del modelo: 93.8%\n• Métricas de calidad: 8.2/10\n\n✅ Análisis completado exitosamente\n⏱️ Tiempo de ejecución: 1.4s\n"
+    }
+  ]
+}

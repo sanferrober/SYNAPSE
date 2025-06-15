@@ -10,7 +10,9 @@ import {
   Trash2,
   RefreshCw,
   BarChart3,
-  CheckCircle
+  CheckCircle,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 
 const MemoryPanel = () => {
@@ -18,6 +20,17 @@ const MemoryPanel = () => {
   const [memoryStats, setMemoryStats] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Mostrar diálogo de confirmación para limpiar memoria
+  const handleClearMemoryClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  // Cancelar limpieza de memoria
+  const cancelClearMemory = () => {
+    setShowConfirmDialog(false);
+  };
 
   // Cargar estadísticas de memoria
   const loadMemoryStats = async () => {
@@ -61,8 +74,8 @@ const MemoryPanel = () => {
   // Limpiar memoria
   const clearMemory = async () => {
     if (!isConnected) return;
-    if (!confirm('¿Estás seguro de que quieres limpiar toda la memoria?')) return;
-    
+
+    setShowConfirmDialog(false);
     setLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/memory/clear', {
@@ -292,7 +305,7 @@ const MemoryPanel = () => {
             Backup
           </button>
           <button
-            onClick={clearMemory}
+            onClick={handleClearMemoryClick}
             disabled={loading || !isConnected}
             className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
           >
@@ -396,6 +409,30 @@ const MemoryPanel = () => {
             {activeTab === 'storage' && renderStorage()}
           </>
         )}
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25 z-50">
+          <div className="bg-white rounded-lg p-6 shadow-lg max-w-sm w-full">
+            <h3 className="text-lg font-semibold mb-4">Confirmar limpieza</h3>
+            <p className="mb-6">¿Estás seguro de que quieres limpiar toda la memoria?</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={clearMemory}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
