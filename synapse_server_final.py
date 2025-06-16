@@ -28,6 +28,7 @@ from dynamic_analysis import (
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), 'mcp_integration'))
 from consolidated_mcp_tools import get_consolidated_mcp_tools, execute_mcp_tool
+from real_mcp_tools import execute_real_mcp_tool
 # Estado del sistema con memoria persistente
 system_state = {
     'active_connections': 0,
@@ -991,12 +992,12 @@ def handle_message(data):
 
 # Configuración por defecto de LLMs
 DEFAULT_LLM_CONFIG = {
-    'conversation_agent': 'gpt-4',
-    'planning_agent': 'gpt-4',
-    'execution_agent': 'gpt-3.5-turbo',
-    'analysis_agent': 'gpt-4',
-    'memory_agent': 'gpt-3.5-turbo',
-    'optimization_agent': 'claude-3-sonnet'
+    'conversation_agent': 'gemini-1.5-flash',
+    'planning_agent': 'gemini-1.5-flash',
+    'execution_agent': 'gemini-1.5-flash',
+    'analysis_agent': 'gemini-1.5-flash',
+    'memory_agent': 'gemini-1.5-flash',
+    'optimization_agent': 'gemini-1.5-flash'
 }
 
 # Estado global de configuración LLM
@@ -1196,9 +1197,9 @@ def execute_mcp_tool_endpoint(tool_id):
         if not tool.get('enabled', False):
             return jsonify({'error': f'Herramienta {tool_id} está deshabilitada'}), 403
         
-        # Ejecutar la herramienta
-        result = execute_mcp_tool(tool_id, parameters)
-        
+        # Ejecutar la herramienta REAL
+        result = execute_real_mcp_tool(tool_id, parameters)
+
         return jsonify(result)
         
     except Exception as e:
@@ -1239,17 +1240,293 @@ def get_mcp_categories():
         'timestamp': datetime.now().isoformat()
     })
 
+# Nuevos endpoints para memoria y outputs
+@app.route('/api/memory/plans', methods=['GET'])
+def get_executed_plans():
+    """Obtener historial de planes ejecutados"""
+    try:
+        plans = system_state.get('executed_plans', [])
+        return jsonify({
+            'success': True,
+            'plans': plans,
+            'total_plans': len(plans),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/plan/<plan_id>/outputs', methods=['GET'])
+def get_plan_outputs(plan_id):
+    """Obtener outputs de un plan específico"""
+    try:
+        plan_outputs = system_state['memory_store']['plan_outputs'].get(plan_id)
+        if not plan_outputs:
+            return jsonify({'success': False, 'error': 'Plan no encontrado'}), 404
+
+        return jsonify({
+            'success': True,
+            'plan_id': plan_id,
+            'outputs': plan_outputs,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/all', methods=['GET'])
+def get_all_memory():
+    """Obtener toda la memoria del sistema"""
+    try:
+        return jsonify({
+            'success': True,
+            'memory_store': system_state['memory_store'],
+            'executed_plans': system_state['executed_plans'],
+            'total_plans': len(system_state['executed_plans']),
+            'total_outputs': len(system_state['memory_store']['plan_outputs']),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/clear', methods=['POST'])
+def clear_memory():
+    """Limpiar memoria del sistema"""
+    try:
+        system_state['executed_plans'] = []
+        system_state['memory_store'] = {
+            'conversations': [],
+            'plan_outputs': {},
+            'user_preferences': {},
+            'learned_patterns': []
+        }
+
+        return jsonify({
+            'success': True,
+            'message': 'Memoria limpiada exitosamente',
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/outputs/recent', methods=['GET'])
+def get_recent_outputs():
+    """Obtener outputs recientes de todos los planes"""
+    try:
+        recent_outputs = []
+
+        # Obtener los últimos 10 planes ejecutados
+        recent_plans = system_state['executed_plans'][-10:] if system_state['executed_plans'] else []
+
+        for plan in recent_plans:
+            plan_id = plan['id']
+            plan_outputs = system_state['memory_store']['plan_outputs'].get(plan_id, {})
+
+            if plan_outputs.get('steps_outputs'):
+                recent_outputs.append({
+                    'plan_id': plan_id,
+                    'plan_title': plan['title'],
+                    'completion_time': plan['completion_time'],
+                    'outputs_count': len(plan_outputs['steps_outputs']),
+                    'final_summary': plan_outputs.get('final_summary', ''),
+                    'sample_outputs': list(plan_outputs['steps_outputs'].values())[:3]  # Primeros 3 outputs
+                })
+
+        return jsonify({
+            'success': True,
+            'recent_outputs': recent_outputs,
+            'total_plans_with_outputs': len(recent_outputs),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# 🧠 NUEVOS ENDPOINTS DE MEMORIA MEJORADOS
+
+@app.route('/api/memory/conversations', methods=['GET'])
+def get_conversations():
+    """Obtener historial de conversaciones"""
+    try:
+        conversations = system_state['memory_store']['conversations']
+
+        # Filtrar por sesión si se especifica
+        session_id = request.args.get('session_id')
+        if session_id:
+            conversations = [c for c in conversations if c.get('session_id') == session_id]
+
+        # Limitar número de conversaciones
+        limit = int(request.args.get('limit', 50))
+        conversations = conversations[-limit:] if len(conversations) > limit else conversations
+
+        return jsonify({
+            'success': True,
+            'conversations': conversations,
+            'total': len(system_state['memory_store']['conversations']),
+            'filtered': len(conversations),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/preferences', methods=['GET'])
+def get_user_preferences():
+    """Obtener preferencias de usuarios"""
+    try:
+        preferences = system_state['memory_store']['user_preferences']
+
+        # Filtrar por usuario específico si se especifica
+        user_id = request.args.get('user_id')
+        if user_id:
+            user_key = f'user_{user_id}'
+            preferences = {user_key: preferences.get(user_key, {})}
+
+        return jsonify({
+            'success': True,
+            'preferences': preferences,
+            'total_users': len(system_state['memory_store']['user_preferences']),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/patterns', methods=['GET'])
+def get_learned_patterns():
+    """Obtener patrones aprendidos"""
+    try:
+        patterns = system_state['memory_store']['learned_patterns']
+
+        # Ordenar por frecuencia y tasa de éxito
+        patterns_sorted = sorted(
+            patterns,
+            key=lambda x: x.get('frequency', 0) * x.get('success_rate', 0),
+            reverse=True
+        )
+
+        # Limitar número de patrones
+        limit = int(request.args.get('limit', 20))
+        patterns_limited = patterns_sorted[:limit]
+
+        return jsonify({
+            'success': True,
+            'patterns': patterns_limited,
+            'total_patterns': len(patterns),
+            'top_patterns': patterns_limited[:5],
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/stats', methods=['GET'])
+def get_memory_stats():
+    """Obtener estadísticas de memoria"""
+    try:
+        memory_store = system_state['memory_store']
+
+        # Calcular estadísticas
+        total_conversations = len(memory_store['conversations'])
+        total_users = len(memory_store['user_preferences'])
+        total_patterns = len(memory_store['learned_patterns'])
+        total_outputs = len(memory_store['plan_outputs'])
+        total_executed_plans = len(system_state['executed_plans'])
+
+        # Estadísticas de patrones
+        if total_patterns > 0:
+            avg_success_rate = sum(p.get('success_rate', 0) for p in memory_store['learned_patterns']) / total_patterns
+            most_frequent_pattern = max(memory_store['learned_patterns'], key=lambda x: x.get('frequency', 0))
+        else:
+            avg_success_rate = 0
+            most_frequent_pattern = None
+
+        # Tamaño de memoria en disco
+        memory_file_size = 0
+        if os.path.exists(MEMORY_FILE):
+            memory_file_size = os.path.getsize(MEMORY_FILE)
+
+        return jsonify({
+            'success': True,
+            'stats': {
+                'conversations': {
+                    'total': total_conversations,
+                    'recent_24h': len([c for c in memory_store['conversations']
+                                     if (datetime.now() - datetime.fromisoformat(c['timestamp'].replace('Z', '+00:00').replace('+00:00', ''))).days < 1])
+                },
+                'users': {
+                    'total': total_users,
+                    'active_preferences': len([p for p in memory_store['user_preferences'].values() if p])
+                },
+                'patterns': {
+                    'total': total_patterns,
+                    'avg_success_rate': round(avg_success_rate, 2),
+                    'most_frequent': most_frequent_pattern['plan_type'] if most_frequent_pattern else None
+                },
+                'plans': {
+                    'total_executed': total_executed_plans,
+                    'total_outputs': total_outputs
+                },
+                'storage': {
+                    'memory_file_size_bytes': memory_file_size,
+                    'memory_file_size_mb': round(memory_file_size / (1024 * 1024), 2)
+                }
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/memory/backup', methods=['POST'])
+def create_memory_backup():
+    """Crear backup manual de la memoria"""
+    try:
+        backup_filename = f"synapse_memory_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+
+        memory_data = {
+            'memory_store': system_state['memory_store'],
+            'executed_plans': system_state['executed_plans'],
+            'backup_created': datetime.now().isoformat(),
+            'version': '2.3.0'
+        }
+
+        with open(backup_filename, 'w', encoding='utf-8') as f:
+            json.dump(memory_data, f, indent=2, ensure_ascii=False)
+
+        return jsonify({
+            'success': True,
+            'backup_file': backup_filename,
+            'file_size_bytes': os.path.getsize(backup_filename),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 if __name__ == '__main__':
-    print("🚀 Iniciando Synapse Server v2.2.0...")
+    print("🚀 Iniciando Synapse Server v2.3.0...")
     print("🔧 Configuración:")
     print(f"   - Puerto: 5000")
     print(f"   - CORS: Habilitado para todos los orígenes")
     print(f"   - WebSocket: Habilitado")
     print(f"   - Herramientas disponibles: {len(available_tools)}")
-    print(f"   - Herramientas MCP: {len([t for t in available_tools if t.get('type') == 'mcp'])}")
+    print(f"   - Herramientas MCP: {len(get_consolidated_mcp_tools())}")
     print(f"   - Herramientas Core: {len([t for t in available_tools if t.get('type') == 'core'])}")
+
+    # Cargar configuración LLM desde disco
+    print("🤖 Cargando configuración de LLMs...")
+    if load_llm_config_from_disk():
+        print("✅ Configuración LLM cargada exitosamente")
+        for agent, llm in llm_config.items():
+            print(f"   - {agent}: {llm}")
+    else:
+        print("⚠️ Usando configuración LLM por defecto")
+        for agent, llm in DEFAULT_LLM_CONFIG.items():
+            print(f"   - {agent}: {llm}")
+
+    # Cargar memoria desde disco
+    print("💾 Cargando memoria del sistema...")
+    load_memory_from_disk()
+
+    # Iniciar auto-guardado de memoria
+    auto_save_memory()
+
     print("✅ Servidor listo para recibir conexiones")
-    
+
     socketio.run(app, host='0.0.0.0', port=5000, debug=False, allow_unsafe_werkzeug=True)
 
 

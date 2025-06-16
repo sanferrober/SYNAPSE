@@ -7,6 +7,9 @@ import MCPToolsPanel from './components/MCPToolsPanel';
 import MemoryPanel from './components/MemoryPanel';
 import OutputsPanel from './components/OutputsPanel';
 import DebugPanel from './components/DebugPanel';
+import SimpleDebugPanel from './components/SimpleDebugPanel';
+import SimpleOutputsPanel from './components/SimpleOutputsPanel';
+import OutputsPanelFixed from './components/OutputsPanelFixed';
 import LLMSelector from './components/LLMSelector';
 import StatusBar from './components/StatusBar';
 import {
@@ -81,6 +84,24 @@ function AppContent() {
       name: 'Debug',
       icon: Bug,
       component: DebugPanel,
+    },
+    {
+      id: 'simple-debug',
+      name: 'Simple Debug',
+      icon: Search,
+      component: SimpleDebugPanel,
+    },
+    {
+      id: 'simple-outputs',
+      name: 'Simple Outputs',
+      icon: FileText,
+      component: SimpleOutputsPanel,
+    },
+    {
+      id: 'outputs-fixed',
+      name: 'Outputs Fixed',
+      icon: FileText,
+      component: OutputsPanelFixed,
     },
   ];
 

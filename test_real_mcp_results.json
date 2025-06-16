@@ -1,0 +1,43 @@
+{
+  "timestamp": "2024-01-15T10:30:00",
+  "total_tests": 5,
+  "successful_tests": 5,
+  "success_rate": 100.0,
+  "detailed_results": [
+    {
+      "test": 1,
+      "tool_id": "web_search_mcp",
+      "success": true,
+      "execution_time": 0.313731,
+      "result_length": 114
+    },
+    {
+      "test": 2,
+      "tool_id": "github_mcp",
+      "success": true,
+      "execution_time": 0.525021,
+      "result_length": 1116
+    },
+    {
+      "test": 3,
+      "tool_id": "brave_search_mcp",
+      "success": true,
+      "execution_time": 0.85,
+      "result_length": 1111
+    },
+    {
+      "test": 4,
+      "tool_id": "tavily_search",
+      "success": true,
+      "execution_time": 1.2,
+      "result_length": 1177
+    },
+    {
+      "test": 5,
+      "tool_id": "filesystem_mcp",
+      "success": true,
+      "execution_time": 1.5,
+      "result_length": 497
+    }
+  ]
+}
