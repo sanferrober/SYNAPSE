@@ -1,0 +1,8 @@
+{
+  "conversation_agent": "gemini-1.5-flash",
+  "planning_agent": "gemini-1.5-flash",
+  "execution_agent": "gemini-1.5-flash",
+  "analysis_agent": "gemini-1.5-flash",
+  "memory_agent": "gemini-1.5-flash",
+  "optimization_agent": "gemini-1.5-flash"
+}

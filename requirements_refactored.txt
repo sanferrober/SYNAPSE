@@ -1,0 +1,16 @@
+flask>=3.0.0
+flask-cors>=4.0.0
+flask-socketio>=5.3.6
+python-socketio>=5.10.0
+requests>=2.31.0
+psutil>=5.9.6
+python-dotenv>=1.0.0
+# Actualizar el archivo de requisitos con las nuevas dependencias MCP
+# Dependencias para herramientas MCP reales
+urllib3>=2.0.0
+# Dependencias MCP
+mcp==1.0.0
+# Dependencias adicionales para servidores MCP personalizados
+asyncio-mqtt==0.16.1
+aiofiles==23.2.1
+pydantic>=2.8.0
