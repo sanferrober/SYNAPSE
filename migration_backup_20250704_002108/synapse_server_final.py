@@ -992,12 +992,12 @@ def handle_message(data):
 
 # Configuración por defecto de LLMs
 DEFAULT_LLM_CONFIG = {
-    'conversation_agent': 'gemini-1.5-flash',
-    'planning_agent': 'gemini-1.5-flash',
-    'execution_agent': 'gemini-1.5-flash',
-    'analysis_agent': 'gemini-1.5-flash',
-    'memory_agent': 'gemini-1.5-flash',
-    'optimization_agent': 'gemini-1.5-flash'
+    'conversation_agent': 'gemini-2.5-flash',
+    'planning_agent': 'gemini-2.5-flash',
+    'execution_agent': 'gemini-2.5-flash',
+    'analysis_agent': 'gemini-2.5-flash',
+    'memory_agent': 'gemini-2.5-flash',
+    'optimization_agent': 'gemini-2.5-flash'
 }
 
 # Estado global de configuración LLM
@@ -1093,7 +1093,7 @@ def test_llm_connection_real(llm_id):
         'claude-3-sonnet': 0.92,
         'claude-3-haiku': 0.95,
         'gemini-pro': 0.88,
-        'gemini-flash': 0.93
+        'gemini-2.5-flash': 0.93
     }
 
     rate = success_rates.get(llm_id, 0.85)

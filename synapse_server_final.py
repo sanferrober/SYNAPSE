@@ -24,11 +24,14 @@ from dynamic_analysis import (
     notify_plan_expansion
 )
 
-# Importar herramientas MCP CONSOLIDADAS (todas las anteriores + nuevas)
+# Import consolidated MCP tools (all previous + new ones)
 import sys
+import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'mcp_integration'))
-from consolidated_mcp_tools import get_consolidated_mcp_tools, execute_mcp_tool
+from consolidated_mcp_tools import get_consolidated_mcp_tools
 from real_mcp_tools import execute_real_mcp_tool
+# Alias for compatibility with existing code
+execute_mcp_tool = execute_real_mcp_tool
 # Estado del sistema con memoria persistente
 system_state = {
     'active_connections': 0,
@@ -992,12 +995,12 @@ def handle_message(data):
 
 # Configuración por defecto de LLMs
 DEFAULT_LLM_CONFIG = {
-    'conversation_agent': 'gemini-1.5-flash',
-    'planning_agent': 'gemini-1.5-flash',
-    'execution_agent': 'gemini-1.5-flash',
-    'analysis_agent': 'gemini-1.5-flash',
-    'memory_agent': 'gemini-1.5-flash',
-    'optimization_agent': 'gemini-1.5-flash'
+    'conversation_agent': 'gemini-2.5-flash',
+    'planning_agent': 'gemini-2.5-flash',
+    'execution_agent': 'gemini-2.5-flash',
+    'analysis_agent': 'gemini-2.5-flash',
+    'memory_agent': 'gemini-2.5-flash',
+    'optimization_agent': 'gemini-2.5-flash'
 }
 
 # Estado global de configuración LLM
@@ -1093,7 +1096,7 @@ def test_llm_connection_real(llm_id):
         'claude-3-sonnet': 0.92,
         'claude-3-haiku': 0.95,
         'gemini-pro': 0.88,
-        'gemini-flash': 0.93
+        'gemini-2.5-flash': 0.93
     }
 
     rate = success_rates.get(llm_id, 0.85)
@@ -1239,6 +1242,97 @@ def get_mcp_categories():
         'total_categories': len(categories),
         'timestamp': datetime.now().isoformat()
     })
+
+# Endpoints para gestión de configuración de API Keys MCP
+@app.route('/api/mcp/config', methods=['GET'])
+def get_mcp_config():
+    """Obtener estado de configuración de API Keys"""
+    try:
+        # Importar el gestor de configuración
+        from mcp_integration.mcp_config_manager import MCPConfigManager
+        mcp_config_manager = MCPConfigManager()
+
+        missing_keys = mcp_config_manager.get_missing_keys_info()
+        config_status = {}
+
+        for service in ['brave_search', 'tavily_search', 'firecrawl', 'github', 'openweather', 'newsapi']:
+            config_status[service] = {
+                'configured': mcp_config_manager.has_api_key(service),
+                'description': mcp_config_manager.config.get('api_keys', {}).get(service, {}).get('description', ''),
+                'required': mcp_config_manager.config.get('api_keys', {}).get(service, {}).get('required', True)
+            }
+
+        return jsonify({
+            'success': True,
+            'config_status': config_status,
+            'missing_keys': missing_keys,
+            'free_tools': mcp_config_manager.config.get('free_tools', []),
+            'config_file': os.path.abspath(mcp_config_manager.config_file),
+            'instructions': mcp_config_manager.get_config_instructions()
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/mcp/config', methods=['POST'])
+def update_mcp_config():
+    """Actualizar API Keys"""
+    try:
+        from mcp_integration.mcp_config_manager import MCPConfigManager
+        mcp_config_manager = MCPConfigManager()
+
+        data = request.json
+        service = data.get('service')
+        api_key = data.get('api_key')
+
+        if not service:
+            return jsonify({
+                'success': False,
+                'error': 'Service name required'
+            }), 400
+
+        # Actualizar la API key
+        success = mcp_config_manager.update_api_key(service, api_key)
+
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'API Key for {service} updated successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Failed to update API Key for {service}'
+            }), 500
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/mcp/test/<tool_id>', methods=['POST'])
+def test_mcp_tool(tool_id):
+    """Probar una herramienta MCP específica"""
+    try:
+        parameters = request.json or {}
+
+        # Importar la función de ejecución
+        from mcp_integration.real_mcp_tools import execute_real_mcp_tool
+
+        # Ejecutar la herramienta
+        result = execute_real_mcp_tool(tool_id, parameters)
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'tool_id': tool_id
+        }), 500
 
 # Nuevos endpoints para memoria y outputs
 @app.route('/api/memory/plans', methods=['GET'])

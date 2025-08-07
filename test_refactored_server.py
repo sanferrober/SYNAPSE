@@ -121,8 +121,8 @@ def test_server(base_url="http://localhost:5000"):
     print("\n6. Testing LLM configuration update...")
     try:
         test_config = {
-            "conversation_agent": "gemini-1.5-flash",
-            "planning_agent": "gemini-1.5-flash"
+            "conversation_agent": "gemini-2.5-flash",
+            "planning_agent": "gemini-2.5-flash"
         }
         response = requests.post(
             f"{base_url}/api/config/llm",

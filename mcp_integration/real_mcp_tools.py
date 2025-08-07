@@ -3,35 +3,60 @@ import json
 import os
 from datetime import datetime
 import time
+from typing import Dict, Any, Optional
+from .mcp_config_manager import MCPConfigManager
 
-# Configuración de APIs (usar variables de entorno para producción)
-BRAVE_API_KEY = os.getenv('BRAVE_API_KEY', 'demo_key')
-TAVILY_API_KEY = os.getenv('TAVILY_API_KEY', 'demo_key')
-FIRECRAWL_API_KEY = os.getenv('FIRECRAWL_API_KEY', 'demo_key')
+# Inicializar el gestor de configuración
+config_manager = MCPConfigManager()
 
-def execute_real_mcp_tool(tool_id, parameters=None):
-    """Ejecuta herramientas MCP reales (no simuladas)"""
+def execute_real_mcp_tool(tool_id: str, parameters: Optional[Dict] = None) -> Dict[str, Any]:
+    """
+    Ejecuta herramientas MCP reales con gestión inteligente de API keys
     
+    Args:
+        tool_id: ID de la herramienta a ejecutar
+        parameters: Parámetros para la herramienta
+    
+    Returns:
+        Dict con el resultado de la ejecución
+    """
     if parameters is None:
         parameters = {}
     
     start_time = time.time()
     
     try:
-        if tool_id == 'brave_search_mcp':
-            return execute_brave_search(parameters)
-        elif tool_id == 'tavily_search':
-            return execute_tavily_search(parameters)
-        elif tool_id == 'firecrawl_mcp':
-            return execute_firecrawl(parameters)
-        elif tool_id == 'web_search_mcp':
-            return execute_web_search(parameters)
-        elif tool_id == 'github_mcp':
-            return execute_github_search(parameters)
-        else:
-            # Para herramientas no implementadas, usar simulación mejorada
-            return execute_enhanced_simulation(tool_id, parameters)
+        # Verificar si es una herramienta gratuita
+        if config_manager.is_free_tool(tool_id):
+            return _execute_free_tool(tool_id, parameters, start_time)
+        
+        # Mapeo de herramientas a servicios de API
+        tool_to_service = {
+            'brave_search_mcp': 'brave_search',
+            'tavily_search': 'tavily_search',
+            'firecrawl_mcp': 'firecrawl',
+            'weather_mcp': 'openweather',
+            'news_mcp': 'newsapi'
+        }
+        
+        # Verificar si la herramienta requiere API key
+        service = tool_to_service.get(tool_id)
+        if service and not config_manager.has_api_key(service):
+            # Buscar herramientas alternativas
+            fallback_tools = config_manager.get_fallback_tools(tool_id)
             
+            for fallback_id in fallback_tools:
+                # Intentar con herramienta alternativa
+                if config_manager.is_free_tool(fallback_id) or _has_required_key(fallback_id):
+                    print(f"🔄 Usando herramienta alternativa: {fallback_id} en lugar de {tool_id}")
+                    return execute_real_mcp_tool(fallback_id, parameters)
+            
+            # Si no hay alternativas disponibles, retornar error informativo
+            return _create_api_key_error(tool_id, service, start_time)
+        
+        # Ejecutar la herramienta con la API key disponible
+        return _execute_tool_with_key(tool_id, parameters, start_time)
+        
     except Exception as e:
         execution_time = time.time() - start_time
         return {
@@ -42,133 +67,80 @@ def execute_real_mcp_tool(tool_id, parameters=None):
             'timestamp': datetime.now().isoformat()
         }
 
-def execute_brave_search(parameters):
-    """Ejecuta búsqueda real con Brave Search API"""
+def _has_required_key(tool_id: str) -> bool:
+    """Verifica si una herramienta tiene la API key requerida"""
+    tool_to_service = {
+        'brave_search_mcp': 'brave_search',
+        'tavily_search': 'tavily_search',
+        'firecrawl_mcp': 'firecrawl',
+        'weather_mcp': 'openweather',
+        'news_mcp': 'newsapi'
+    }
+    
+    service = tool_to_service.get(tool_id)
+    return service is None or config_manager.has_api_key(service)
+
+def _execute_free_tool(tool_id: str, parameters: Dict, start_time: float) -> Dict[str, Any]:
+    """Ejecuta herramientas que no requieren API key"""
+    if tool_id == 'web_search_mcp' or tool_id == 'duckduckgo_mcp':
+        return execute_web_search(parameters, start_time)
+    elif tool_id == 'github_mcp':
+        return execute_github_search(parameters, start_time)
+    elif tool_id == 'wikipedia_mcp':
+        return execute_wikipedia_search(parameters, start_time)
+    else:
+        return {
+            'success': False,
+            'tool_id': tool_id,
+            'error': f'Herramienta gratuita {tool_id} no implementada',
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+
+def _execute_tool_with_key(tool_id: str, parameters: Dict, start_time: float) -> Dict[str, Any]:
+    """Ejecuta herramientas que requieren API key"""
+    if tool_id == 'brave_search_mcp':
+        return execute_brave_search(parameters, start_time)
+    elif tool_id == 'tavily_search':
+        return execute_tavily_search(parameters, start_time)
+    elif tool_id == 'firecrawl_mcp':
+        return execute_firecrawl(parameters, start_time)
+    elif tool_id == 'weather_mcp':
+        return execute_weather_search(parameters, start_time)
+    elif tool_id == 'news_mcp':
+        return execute_news_search(parameters, start_time)
+    else:
+        # Para herramientas no implementadas
+        return {
+            'success': False,
+            'tool_id': tool_id,
+            'error': f'Herramienta {tool_id} no implementada',
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+
+def _create_api_key_error(tool_id: str, service: str, start_time: float) -> Dict[str, Any]:
+    """Crea un mensaje de error informativo sobre API keys faltantes"""
+    execution_time = time.time() - start_time
+    
+    error_message = f"❌ No se puede ejecutar {tool_id}: API Key no configurada\n\n"
+    error_message += config_manager.get_config_instructions()
+    
+    return {
+        'success': False,
+        'tool_id': tool_id,
+        'error': error_message,
+        'missing_api_key': service,
+        'config_file': os.path.abspath(config_manager.config_file),
+        'execution_time': round(execution_time, 2),
+        'timestamp': datetime.now().isoformat()
+    }
+
+def execute_web_search(parameters: Dict, start_time: float) -> Dict[str, Any]:
+    """Ejecuta búsqueda web usando DuckDuckGo API (gratuita)"""
     query = parameters.get('query', parameters.get('q', 'synapse ai assistant'))
-    count = parameters.get('count', 10)
-    
-    # Si no hay API key real, usar simulación mejorada
-    if BRAVE_API_KEY == 'demo_key':
-        return simulate_brave_search(query, count)
     
     try:
-        url = "https://api.search.brave.com/res/v1/web/search"
-        headers = {
-            "Accept": "application/json",
-            "Accept-Encoding": "gzip",
-            "X-Subscription-Token": BRAVE_API_KEY
-        }
-        params = {
-            "q": query,
-            "count": count,
-            "search_lang": "es",
-            "country": "ES",
-            "safesearch": "moderate"
-        }
-        
-        response = requests.get(url, headers=headers, params=params, timeout=10)
-        
-        if response.status_code == 200:
-            data = response.json()
-            results = data.get('web', {}).get('results', [])
-            
-            result_text = f"🔍 **Brave Search - Resultados Reales**\n\n"
-            result_text += f"📝 Consulta: \"{query}\"\n"
-            result_text += f"📊 Resultados encontrados: {len(results)}\n"
-            result_text += f"⏱️ Tiempo de respuesta: {response.elapsed.total_seconds():.2f}s\n\n"
-            result_text += "🎯 **Resultados principales:**\n"
-            
-            for i, result in enumerate(results[:5], 1):
-                title = result.get('title', 'Sin título')
-                url = result.get('url', 'Sin URL')
-                description = result.get('description', 'Sin descripción')
-                
-                result_text += f"\n**{i}. {title}**\n"
-                result_text += f"🔗 {url}\n"
-                result_text += f"📄 {description[:150]}...\n"
-            
-            return {
-                'success': True,
-                'tool_name': 'Brave Search Advanced',
-                'tool_id': 'brave_search_mcp',
-                'result': result_text,
-                'raw_data': data,
-                'execution_time': response.elapsed.total_seconds(),
-                'timestamp': datetime.now().isoformat()
-            }
-        else:
-            return simulate_brave_search(query, count, f"API Error: {response.status_code}")
-            
-    except Exception as e:
-        return simulate_brave_search(query, count, f"Connection Error: {str(e)}")
-
-def execute_tavily_search(parameters):
-    """Ejecuta búsqueda real con Tavily API"""
-    query = parameters.get('query', parameters.get('q', 'AI development tools'))
-    
-    # Si no hay API key real, usar simulación mejorada
-    if TAVILY_API_KEY == 'demo_key':
-        return simulate_tavily_search(query)
-    
-    try:
-        url = "https://api.tavily.com/search"
-        payload = {
-            "api_key": TAVILY_API_KEY,
-            "query": query,
-            "search_depth": "advanced",
-            "include_answer": True,
-            "include_images": False,
-            "include_raw_content": False,
-            "max_results": 8
-        }
-        
-        response = requests.post(url, json=payload, timeout=15)
-        
-        if response.status_code == 200:
-            data = response.json()
-            results = data.get('results', [])
-            answer = data.get('answer', '')
-            
-            result_text = f"🎯 **Tavily Search - Resultados Reales**\n\n"
-            result_text += f"📝 Consulta: \"{query}\"\n"
-            result_text += f"📊 Resultados encontrados: {len(results)}\n"
-            result_text += f"⏱️ Tiempo de respuesta: {response.elapsed.total_seconds():.2f}s\n\n"
-            
-            if answer:
-                result_text += f"💡 **Respuesta IA:**\n{answer}\n\n"
-            
-            result_text += "🎯 **Resultados principales:**\n"
-            
-            for i, result in enumerate(results[:5], 1):
-                title = result.get('title', 'Sin título')
-                url = result.get('url', 'Sin URL')
-                content = result.get('content', 'Sin contenido')
-                
-                result_text += f"\n**{i}. {title}**\n"
-                result_text += f"🔗 {url}\n"
-                result_text += f"📄 {content[:200]}...\n"
-            
-            return {
-                'success': True,
-                'tool_name': 'Tavily Search',
-                'tool_id': 'tavily_search',
-                'result': result_text,
-                'raw_data': data,
-                'execution_time': response.elapsed.total_seconds(),
-                'timestamp': datetime.now().isoformat()
-            }
-        else:
-            return simulate_tavily_search(query, f"API Error: {response.status_code}")
-            
-    except Exception as e:
-        return simulate_tavily_search(query, f"Connection Error: {str(e)}")
-
-def execute_web_search(parameters):
-    """Ejecuta búsqueda web usando DuckDuckGo (sin API key requerida)"""
-    query = parameters.get('query', parameters.get('q', 'python programming'))
-    
-    try:
-        # Usar DuckDuckGo Instant Answer API (gratuita)
         url = "https://api.duckduckgo.com/"
         params = {
             'q': query,
@@ -178,243 +150,522 @@ def execute_web_search(parameters):
         }
         
         response = requests.get(url, params=params, timeout=10)
+        data = response.json()
         
-        if response.status_code == 200:
-            data = response.json()
-            
-            result_text = f"🔍 **DuckDuckGo Search - Resultados Reales**\n\n"
-            result_text += f"📝 Consulta: \"{query}\"\n"
-            result_text += f"⏱️ Tiempo de respuesta: {response.elapsed.total_seconds():.2f}s\n\n"
-            
-            # Respuesta instantánea
-            if data.get('Abstract'):
-                result_text += f"💡 **Respuesta Instantánea:**\n{data['Abstract']}\n\n"
-            
-            # Temas relacionados
-            if data.get('RelatedTopics'):
-                result_text += "🎯 **Temas Relacionados:**\n"
-                for i, topic in enumerate(data['RelatedTopics'][:5], 1):
-                    if isinstance(topic, dict) and 'Text' in topic:
-                        result_text += f"{i}. {topic['Text'][:100]}...\n"
-            
-            # Definición
-            if data.get('Definition'):
-                result_text += f"\n📚 **Definición:**\n{data['Definition']}\n"
-            
-            return {
-                'success': True,
-                'tool_name': 'Web Search (DuckDuckGo)',
-                'tool_id': 'web_search_mcp',
-                'result': result_text,
-                'raw_data': data,
-                'execution_time': response.elapsed.total_seconds(),
-                'timestamp': datetime.now().isoformat()
-            }
-        else:
-            return simulate_web_search(query, f"API Error: {response.status_code}")
-            
+        # Formatear resultado
+        result_text = f"🔍 Resultados de búsqueda para: '{query}'\n\n"
+        
+        if data.get('Abstract'):
+            result_text += f"📝 Resumen: {data['Abstract']}\n"
+            if data.get('AbstractURL'):
+                result_text += f"🔗 Fuente: {data['AbstractURL']}\n\n"
+        
+        if data.get('Definition'):
+            result_text += f"📖 Definición: {data['Definition']}\n\n"
+        
+        if data.get('RelatedTopics'):
+            result_text += "📌 Temas relacionados:\n"
+            for i, topic in enumerate(data['RelatedTopics'][:5], 1):
+                if isinstance(topic, dict) and 'Text' in topic:
+                    result_text += f"  {i}. {topic['Text']}\n"
+                    if 'FirstURL' in topic:
+                        result_text += f"     🔗 {topic['FirstURL']}\n"
+        
+        return {
+            'success': True,
+            'tool_id': 'web_search_mcp',
+            'tool_name': 'DuckDuckGo Web Search',
+            'result': result_text,
+            'metadata': {
+                'query': query,
+                'source': 'DuckDuckGo API',
+                'results_count': len(data.get('RelatedTopics', [])),
+                'has_abstract': bool(data.get('Abstract')),
+                'has_definition': bool(data.get('Definition'))
+            },
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+        
     except Exception as e:
-        return simulate_web_search(query, f"Connection Error: {str(e)}")
+        return {
+            'success': False,
+            'tool_id': 'web_search_mcp',
+            'error': f'Error en búsqueda web: {str(e)}',
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
 
-def execute_github_search(parameters):
-    """Ejecuta búsqueda en GitHub usando API pública"""
-    query = parameters.get('query', parameters.get('q', 'python machine learning'))
-    sort = parameters.get('sort', 'stars')
+def execute_github_search(parameters: Dict, start_time: float) -> Dict[str, Any]:
+    """Ejecuta búsqueda en GitHub (API pública, límite de 60 requests/hora sin token)"""
+    query = parameters.get('query', 'synapse')
+    language = parameters.get('language', '')
     
     try:
+        # Construir query para GitHub
+        github_query = query
+        if language:
+            github_query += f" language:{language}"
+        
         url = "https://api.github.com/search/repositories"
         params = {
-            'q': query,
-            'sort': sort,
+            'q': github_query,
+            'sort': 'stars',
             'order': 'desc',
-            'per_page': 5
+            'per_page': 10
         }
         
         headers = {
             'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'Synapse-AI-Assistant'
+            'User-Agent': 'Synapse-MCP-Tool'
         }
+        
+        # Agregar token si está disponible
+        github_token = config_manager.get_api_key('github')
+        if github_token:
+            headers['Authorization'] = f'token {github_token}'
         
         response = requests.get(url, params=params, headers=headers, timeout=10)
         
-        if response.status_code == 200:
-            data = response.json()
-            repos = data.get('items', [])
-            
-            result_text = f"🐙 **GitHub Search - Resultados Reales**\n\n"
-            result_text += f"📝 Consulta: \"{query}\"\n"
-            result_text += f"📊 Repositorios encontrados: {data.get('total_count', 0)}\n"
-            result_text += f"⏱️ Tiempo de respuesta: {response.elapsed.total_seconds():.2f}s\n\n"
-            result_text += "🎯 **Repositorios principales:**\n"
-            
-            for i, repo in enumerate(repos, 1):
-                name = repo.get('full_name', 'Sin nombre')
-                description = repo.get('description', 'Sin descripción')
-                stars = repo.get('stargazers_count', 0)
-                language = repo.get('language', 'N/A')
-                url = repo.get('html_url', '')
-                
-                result_text += f"\n**{i}. {name}**\n"
-                result_text += f"⭐ {stars} estrellas | 💻 {language}\n"
-                result_text += f"📄 {description}\n"
-                result_text += f"🔗 {url}\n"
-            
+        if response.status_code == 403:
             return {
-                'success': True,
-                'tool_name': 'GitHub Search',
+                'success': False,
                 'tool_id': 'github_mcp',
-                'result': result_text,
-                'raw_data': data,
-                'execution_time': response.elapsed.total_seconds(),
+                'error': 'Límite de rate de GitHub alcanzado. Configura un token para más requests.',
+                'execution_time': round(time.time() - start_time, 2),
                 'timestamp': datetime.now().isoformat()
             }
+        
+        data = response.json()
+        
+        # Formatear resultado
+        result_text = f"🔍 Resultados de GitHub para: '{query}'\n"
+        if language:
+            result_text += f"📝 Lenguaje: {language}\n"
+        result_text += f"📊 Total de resultados: {data.get('total_count', 0)}\n\n"
+        
+        if data.get('items'):
+            result_text += "📦 Repositorios encontrados:\n\n"
+            for i, repo in enumerate(data['items'][:10], 1):
+                result_text += f"{i}. {repo['full_name']}\n"
+                result_text += f"   ⭐ Stars: {repo['stargazers_count']}\n"
+                result_text += f"   📝 {repo.get('description', 'Sin descripción')}\n"
+                result_text += f"   🔗 {repo['html_url']}\n"
+                result_text += f"   📅 Actualizado: {repo['updated_at'][:10]}\n\n"
         else:
-            return simulate_github_search(query, f"API Error: {response.status_code}")
-            
+            result_text += "No se encontraron repositorios.\n"
+        
+        return {
+            'success': True,
+            'tool_id': 'github_mcp',
+            'tool_name': 'GitHub Search',
+            'result': result_text,
+            'metadata': {
+                'query': query,
+                'language': language,
+                'total_results': data.get('total_count', 0),
+                'results_shown': len(data.get('items', [])),
+                'rate_limit_remaining': response.headers.get('X-RateLimit-Remaining', 'N/A')
+            },
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+        
     except Exception as e:
-        return simulate_github_search(query, f"Connection Error: {str(e)}")
-
-# Funciones de simulación mejorada para cuando no hay APIs disponibles
-def simulate_brave_search(query, count=10, error_msg=None):
-    """Simulación mejorada de Brave Search"""
-    result_text = f"🔍 **Brave Search - Simulación Mejorada**\n\n"
-    if error_msg:
-        result_text += f"⚠️ {error_msg} - Usando simulación\n\n"
-    
-    result_text += f"📝 Consulta: \"{query}\"\n"
-    result_text += f"📊 Resultados simulados: {count}\n"
-    result_text += f"⏱️ Tiempo simulado: 0.85s\n\n"
-    result_text += "🎯 **Resultados simulados:**\n"
-    
-    # Generar resultados más realistas basados en la query
-    topics = query.lower().split()
-    for i in range(min(5, count)):
-        result_text += f"\n**{i+1}. {query.title()} - Guía Completa**\n"
-        result_text += f"🔗 https://example.com/{'-'.join(topics)}-guide-{i+1}\n"
-        result_text += f"📄 Guía completa sobre {query} con ejemplos prácticos...\n"
-    
-    return {
-        'success': True,
-        'tool_name': 'Brave Search Advanced (Simulado)',
-        'tool_id': 'brave_search_mcp',
-        'result': result_text,
-        'execution_time': 0.85,
-        'timestamp': datetime.now().isoformat()
-    }
-
-def simulate_tavily_search(query, error_msg=None):
-    """Simulación mejorada de Tavily Search"""
-    result_text = f"🎯 **Tavily Search - Simulación Mejorada**\n\n"
-    if error_msg:
-        result_text += f"⚠️ {error_msg} - Usando simulación\n\n"
-    
-    result_text += f"📝 Consulta: \"{query}\"\n"
-    result_text += f"📊 Resultados simulados: 8\n"
-    result_text += f"⏱️ Tiempo simulado: 1.2s\n\n"
-    result_text += f"💡 **Respuesta IA Simulada:**\n"
-    result_text += f"Basado en la consulta '{query}', aquí tienes información relevante y actualizada.\n\n"
-    result_text += "🎯 **Resultados simulados:**\n"
-    
-    for i in range(5):
-        result_text += f"\n**{i+1}. {query.title()} - Recurso {i+1}**\n"
-        result_text += f"🔗 https://example.com/resource-{i+1}\n"
-        result_text += f"📄 Información detallada sobre {query} con análisis profundo...\n"
-    
-    return {
-        'success': True,
-        'tool_name': 'Tavily Search (Simulado)',
-        'tool_id': 'tavily_search',
-        'result': result_text,
-        'execution_time': 1.2,
-        'timestamp': datetime.now().isoformat()
-    }
-
-def simulate_web_search(query, error_msg=None):
-    """Simulación mejorada de Web Search"""
-    result_text = f"🔍 **Web Search - Simulación Mejorada**\n\n"
-    if error_msg:
-        result_text += f"⚠️ {error_msg} - Usando simulación\n\n"
-    
-    result_text += f"📝 Consulta: \"{query}\"\n"
-    result_text += f"⏱️ Tiempo simulado: 0.6s\n\n"
-    result_text += f"💡 **Respuesta Instantánea Simulada:**\n"
-    result_text += f"{query.title()} es un tema importante en el desarrollo tecnológico actual.\n\n"
-    result_text += "🎯 **Temas Relacionados Simulados:**\n"
-    
-    topics = query.lower().split()
-    for i, topic in enumerate(topics[:3], 1):
-        result_text += f"{i}. {topic.title()} - Conceptos fundamentales y aplicaciones prácticas...\n"
-    
-    return {
-        'success': True,
-        'tool_name': 'Web Search (Simulado)',
-        'tool_id': 'web_search_mcp',
-        'result': result_text,
-        'execution_time': 0.6,
-        'timestamp': datetime.now().isoformat()
-    }
-
-def simulate_github_search(query, error_msg=None):
-    """Simulación mejorada de GitHub Search"""
-    result_text = f"🐙 **GitHub Search - Simulación Mejorada**\n\n"
-    if error_msg:
-        result_text += f"⚠️ {error_msg} - Usando simulación\n\n"
-    
-    result_text += f"📝 Consulta: \"{query}\"\n"
-    result_text += f"📊 Repositorios simulados: 1000+\n"
-    result_text += f"⏱️ Tiempo simulado: 0.9s\n\n"
-    result_text += "🎯 **Repositorios simulados:**\n"
-    
-    topics = query.lower().split()
-    for i in range(5):
-        stars = 1500 - (i * 200)
-        result_text += f"\n**{i+1}. awesome-{'-'.join(topics[:2])}-{i+1}**\n"
-        result_text += f"⭐ {stars} estrellas | 💻 Python\n"
-        result_text += f"📄 Una colección increíble de recursos sobre {query}\n"
-        result_text += f"🔗 https://github.com/user/awesome-{'-'.join(topics[:2])}-{i+1}\n"
-    
-    return {
-        'success': True,
-        'tool_name': 'GitHub Search (Simulado)',
-        'tool_id': 'github_mcp',
-        'result': result_text,
-        'execution_time': 0.9,
-        'timestamp': datetime.now().isoformat()
-    }
-
-def execute_enhanced_simulation(tool_id, parameters):
-    """Simulación mejorada para herramientas no implementadas"""
-    from consolidated_mcp_tools import get_consolidated_mcp_tools
-    
-    tools = get_consolidated_mcp_tools()
-    tool = next((t for t in tools if t['id'] == tool_id), None)
-    
-    if not tool:
         return {
             'success': False,
-            'error': f'Herramienta {tool_id} no encontrada',
+            'tool_id': 'github_mcp',
+            'error': f'Error en búsqueda de GitHub: {str(e)}',
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+
+def execute_wikipedia_search(parameters: Dict, start_time: float) -> Dict[str, Any]:
+    """Ejecuta búsqueda en Wikipedia (API gratuita)"""
+    query = parameters.get('query', 'artificial intelligence')
+    
+    try:
+        # Búsqueda en Wikipedia
+        search_url = "https://en.wikipedia.org/w/api.php"
+        search_params = {
+            'action': 'opensearch',
+            'search': query,
+            'limit': 5,
+            'format': 'json'
+        }
+        
+        response = requests.get(search_url, params=search_params, timeout=10)
+        search_data = response.json()
+        
+        result_text = f"📚 Resultados de Wikipedia para: '{query}'\n\n"
+        
+        if len(search_data) > 1 and search_data[1]:
+            titles = search_data[1]
+            descriptions = search_data[2] if len(search_data) > 2 else []
+            urls = search_data[3] if len(search_data) > 3 else []
+            
+            for i, title in enumerate(titles):
+                result_text += f"{i+1}. {title}\n"
+                if i < len(descriptions) and descriptions[i]:
+                    result_text += f"   📝 {descriptions[i]}\n"
+                if i < len(urls) and urls[i]:
+                    result_text += f"   🔗 {urls[i]}\n"
+                result_text += "\n"
+        else:
+            result_text += "No se encontraron resultados.\n"
+        
+        return {
+            'success': True,
+            'tool_id': 'wikipedia_mcp',
+            'tool_name': 'Wikipedia Search',
+            'result': result_text,
+            'metadata': {
+                'query': query,
+                'results_count': len(search_data[1]) if len(search_data) > 1 else 0
+            },
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'tool_id': 'wikipedia_mcp',
+            'error': f'Error en búsqueda de Wikipedia: {str(e)}',
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+
+def execute_brave_search(parameters: Dict, start_time: float) -> Dict[str, Any]:
+    """Ejecuta búsqueda usando Brave Search API"""
+    api_key = config_manager.get_api_key('brave_search')
+    if not api_key:
+        return _create_api_key_error('brave_search_mcp', 'brave_search', start_time)
+    
+    query = parameters.get('query', parameters.get('q', ''))
+    
+    try:
+        url = "https://api.search.brave.com/res/v1/web/search"
+        headers = {
+            'Accept': 'application/json',
+            'X-Subscription-Token': api_key
+        }
+        params = {
+            'q': query,
+            'count': 10
+        }
+        
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        
+        if response.status_code == 401:
+            return {
+                'success': False,
+                'tool_id': 'brave_search_mcp',
+                'error': 'API Key de Brave Search inválida',
+                'execution_time': round(time.time() - start_time, 2),
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        data = response.json()
+        
+        # Formatear resultado
+        result_text = f"🔍 Resultados de Brave Search para: '{query}'\n\n"
+        
+        if 'web' in data and 'results' in data['web']:
+            for i, result in enumerate(data['web']['results'][:10], 1):
+                result_text += f"{i}. {result.get('title', 'Sin título')}\n"
+                result_text += f"   📝 {result.get('description', 'Sin descripción')}\n"
+                result_text += f"   🔗 {result.get('url', '')}\n\n"
+        else:
+            result_text += "No se encontraron resultados.\n"
+        
+        return {
+            'success': True,
+            'tool_id': 'brave_search_mcp',
+            'tool_name': 'Brave Search',
+            'result': result_text,
+            'metadata': {
+                'query': query,
+                'results_count': len(data.get('web', {}).get('results', []))
+            },
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'tool_id': 'brave_search_mcp',
+            'error': f'Error en Brave Search: {str(e)}',
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+
+def execute_tavily_search(parameters: Dict, start_time: float) -> Dict[str, Any]:
+    """Ejecuta búsqueda usando Tavily API"""
+    api_key = config_manager.get_api_key('tavily_search')
+    if not api_key:
+        return _create_api_key_error('tavily_search', 'tavily_search', start_time)
+    
+    query = parameters.get('query', '')
+    
+    try:
+        url = "https://api.tavily.com/search"
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'api_key': api_key,
+            'query': query,
+            'search_depth': 'basic',
+            'max_results': 10
+        }
+        
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        
+        if response.status_code == 401:
+            return {
+                'success': False,
+                'tool_id': 'tavily_search',
+                'error': 'API Key de Tavily inválida',
+                'execution_time': round(time.time() - start_time, 2),
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        data = response.json()
+        
+        # Formatear resultado
+        result_text = f"🔍 Resultados de Tavily para: '{query}'\n\n"
+        
+        if 'results' in data:
+            for i, result in enumerate(data['results'][:10], 1):
+                result_text += f"{i}. {result.get('title', 'Sin título')}\n"
+                result_text += f"   📝 {result.get('content', 'Sin contenido')[:200]}...\n"
+                result_text += f"   🔗 {result.get('url', '')}\n"
+                result_text += f"   📊 Relevancia: {result.get('score', 0):.2f}\n\n"
+        else:
+            result_text += "No se encontraron resultados.\n"
+        
+        return {
+            'success': True,
+            'tool_id': 'tavily_search',
+            'tool_name': 'Tavily Search',
+            'result': result_text,
+            'metadata': {
+                'query': query,
+                'results_count': len(data.get('results', []))
+            },
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'tool_id': 'tavily_search',
+            'error': f'Error en Tavily Search: {str(e)}',
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+
+def execute_firecrawl(parameters: Dict, start_time: float) -> Dict[str, Any]:
+    """Ejecuta web scraping usando Firecrawl API"""
+    api_key = config_manager.get_api_key('firecrawl')
+    if not api_key:
+        return _create_api_key_error('firecrawl_mcp', 'firecrawl', start_time)
+    
+    url = parameters.get('url', '')
+    
+    if not url:
+        return {
+            'success': False,
+            'tool_id': 'firecrawl_mcp',
+            'error': 'URL requerida para Firecrawl',
+            'execution_time': round(time.time() - start_time, 2),
             'timestamp': datetime.now().isoformat()
         }
     
-    query = parameters.get('query', parameters.get('q', 'ejemplo')) if parameters else 'ejemplo'
+    try:
+        api_url = "https://api.firecrawl.dev/v0/scrape"
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'url': url,
+            'pageOptions': {
+                'onlyMainContent': True
+            }
+        }
+        
+        response = requests.post(api_url, json=payload, headers=headers, timeout=15)
+        
+        if response.status_code == 401:
+            return {
+                'success': False,
+                'tool_id': 'firecrawl_mcp',
+                'error': 'API Key de Firecrawl inválida',
+                'execution_time': round(time.time() - start_time, 2),
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        data = response.json()
+        
+        # Formatear resultado
+        result_text = f"🌐 Contenido extraído de: {url}\n\n"
+        
+        if data.get('success') and data.get('data'):
+            content = data['data'].get('content', '')
+            result_text += content[:1000] + "..." if len(content) > 1000 else content
+        else:
+            result_text += "No se pudo extraer contenido de la página.\n"
+        
+        return {
+            'success': True,
+            'tool_id': 'firecrawl_mcp',
+            'tool_name': 'Firecrawl Web Scraper',
+            'result': result_text,
+            'metadata': {
+                'url': url,
+                'content_length': len(data.get('data', {}).get('content', ''))
+            },
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'tool_id': 'firecrawl_mcp',
+            'error': f'Error en Firecrawl: {str(e)}',
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+
+def execute_weather_search(parameters: Dict, start_time: float) -> Dict[str, Any]:
+    """Ejecuta búsqueda de clima usando OpenWeather API"""
+    api_key = config_manager.get_api_key('openweather')
+    if not api_key:
+        return _create_api_key_error('weather_mcp', 'openweather', start_time)
     
-    result_text = f"🛠️ **{tool['name']} - Simulación Mejorada**\n\n"
-    result_text += f"📝 Parámetros: {json.dumps(parameters, indent=2) if parameters else 'Ninguno'}\n"
-    result_text += f"⏱️ Tiempo simulado: 1.5s\n\n"
-    result_text += f"🎯 **Capacidades simuladas:**\n"
+    city = parameters.get('city', 'London')
     
-    for capability in tool.get('capabilities', [])[:3]:
-        result_text += f"• {capability}: ✅ Ejecutado exitosamente\n"
+    try:
+        url = "https://api.openweathermap.org/data/2.5/weather"
+        params = {
+            'q': city,
+            'appid': api_key,
+            'units': 'metric',
+            'lang': 'es'
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 401:
+            return {
+                'success': False,
+                'tool_id': 'weather_mcp',
+                'error': 'API Key de OpenWeather inválida',
+                'execution_time': round(time.time() - start_time, 2),
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        data = response.json()
+        
+        # Formatear resultado
+        result_text = f"🌤️ Clima en {data.get('name', city)}, {data.get('sys', {}).get('country', '')}\n\n"
+        result_text += f"🌡️ Temperatura: {data.get('main', {}).get('temp', 'N/A')}°C\n"
+        result_text += f"🤔 Sensación térmica: {data.get('main', {}).get('feels_like', 'N/A')}°C\n"
+        result_text += f"☁️ Condición: {data.get('weather', [{}])[0].get('description', 'N/A')}\n"
+        result_text += f"💧 Humedad: {data.get('main', {}).get('humidity', 'N/A')}%\n"
+        result_text += f"💨 Viento: {data.get('wind', {}).get('speed', 'N/A')} m/s\n"
+        
+        return {
+            'success': True,
+            'tool_id': 'weather_mcp',
+            'tool_name': 'OpenWeather',
+            'result': result_text,
+            'metadata': {
+                'city': city,
+                'temperature': data.get('main', {}).get('temp'),
+                'condition': data.get('weather', [{}])[0].get('main')
+            },
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'tool_id': 'weather_mcp',
+            'error': f'Error en búsqueda de clima: {str(e)}',
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+
+def execute_news_search(parameters: Dict, start_time: float) -> Dict[str, Any]:
+    """Ejecuta búsqueda de noticias usando NewsAPI"""
+    api_key = config_manager.get_api_key('newsapi')
+    if not api_key:
+        return _create_api_key_error('news_mcp', 'newsapi', start_time)
     
-    result_text += f"\n📊 **Resultado simulado:**\n"
-    result_text += f"La herramienta {tool['name']} ha procesado la solicitud correctamente.\n"
-    result_text += f"Se han generado resultados basados en los parámetros proporcionados.\n"
+    query = parameters.get('query', 'technology')
     
-    return {
-        'success': True,
-        'tool_name': f"{tool['name']} (Simulado Mejorado)",
-        'tool_id': tool_id,
-        'result': result_text,
-        'execution_time': 1.5,
-        'timestamp': datetime.now().isoformat()
-    }
+    try:
+        url = "https://newsapi.org/v2/everything"
+        params = {
+            'q': query,
+            'apiKey': api_key,
+            'sortBy': 'relevancy',
+            'pageSize': 10,
+            'language': 'es'
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 401:
+            return {
+                'success': False,
+                'tool_id': 'news_mcp',
+                'error': 'API Key de NewsAPI inválida',
+                'execution_time': round(time.time() - start_time, 2),
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        data = response.json()
+        
+        # Formatear resultado
+        result_text = f"📰 Noticias sobre: '{query}'\n\n"
+        
+        if data.get('articles'):
+            for i, article in enumerate(data['articles'][:10], 1):
+                result_text += f"{i}. {article.get('title', 'Sin título')}\n"
+                result_text += f"   📅 {article.get('publishedAt', '')[:10]}\n"
+                result_text += f"   📝 {article.get('description', 'Sin descripción')[:150]}...\n"
+                result_text += f"   🔗 {article.get('url', '')}\n"
+                result_text += f"   📰 Fuente: {article.get('source', {}).get('name', 'Desconocida')}\n\n"
+        else:
+            result_text += "No se encontraron noticias.\n"
+        
+        return {
+            'success': True,
+            'tool_id': 'news_mcp',
+            'tool_name': 'NewsAPI',
+            'result': result_text,
+            'metadata': {
+                'query': query,
+                'total_results': data.get('totalResults', 0),
+                'results_shown': len(data.get('articles', []))
+            },
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'tool_id': 'news_mcp',
+            'error': f'Error en búsqueda de noticias: {str(e)}',
+            'execution_time': round(time.time() - start_time, 2),
+            'timestamp': datetime.now().isoformat()
+        }

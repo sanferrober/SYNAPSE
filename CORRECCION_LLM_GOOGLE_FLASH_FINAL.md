@@ -25,7 +25,7 @@ DEFAULT_LLM_CONFIG = {
 {
   "conversation_agent": "claude-3-opus",    // ❌ Sin API key
   "planning_agent": "gpt-4",               // ❌ Sin API key
-  "execution_agent": "gemini-flash",       // ⚠️ Nombre incorrecto
+  "execution_agent": "gemini-2.5-flash",       // ⚠️ Nombre incorrecto
   "analysis_agent": "gpt-4",               // ❌ Sin API key
   "memory_agent": "gpt-3.5-turbo",         // ❌ Sin API key
   "optimization_agent": "claude-3-sonnet"  // ❌ Sin API key
@@ -42,12 +42,12 @@ DEFAULT_LLM_CONFIG = {
 ```python
 # En synapse_server_final.py - LÍNEA 994
 DEFAULT_LLM_CONFIG = {
-    'conversation_agent': 'gemini-1.5-flash',    # ✅ Google Flash
-    'planning_agent': 'gemini-1.5-flash',        # ✅ Google Flash
-    'execution_agent': 'gemini-1.5-flash',       # ✅ Google Flash
-    'analysis_agent': 'gemini-1.5-flash',        # ✅ Google Flash
-    'memory_agent': 'gemini-1.5-flash',          # ✅ Google Flash
-    'optimization_agent': 'gemini-1.5-flash'     # ✅ Google Flash
+    'conversation_agent': 'gemini-2.5-flash',    # ✅ Google Flash
+    'planning_agent': 'gemini-2.5-flash',        # ✅ Google Flash
+    'execution_agent': 'gemini-2.5-flash',       # ✅ Google Flash
+    'analysis_agent': 'gemini-2.5-flash',        # ✅ Google Flash
+    'memory_agent': 'gemini-2.5-flash',          # ✅ Google Flash
+    'optimization_agent': 'gemini-2.5-flash'     # ✅ Google Flash
 }
 ```
 
@@ -55,12 +55,12 @@ DEFAULT_LLM_CONFIG = {
 ```json
 // En llm_config.json
 {
-  "conversation_agent": "gemini-1.5-flash",      // ✅ Google Flash
-  "planning_agent": "gemini-1.5-flash",          // ✅ Google Flash
-  "execution_agent": "gemini-1.5-flash",         // ✅ Google Flash
-  "analysis_agent": "gemini-1.5-flash",          // ✅ Google Flash
-  "memory_agent": "gemini-1.5-flash",            // ✅ Google Flash
-  "optimization_agent": "gemini-1.5-flash"       // ✅ Google Flash
+  "conversation_agent": "gemini-2.5-flash",      // ✅ Google Flash
+  "planning_agent": "gemini-2.5-flash",          // ✅ Google Flash
+  "execution_agent": "gemini-2.5-flash",         // ✅ Google Flash
+  "analysis_agent": "gemini-2.5-flash",          // ✅ Google Flash
+  "memory_agent": "gemini-2.5-flash",            // ✅ Google Flash
+  "optimization_agent": "gemini-2.5-flash"       // ✅ Google Flash
 }
 ```
 
@@ -93,12 +93,12 @@ docker-compose -f docker-compose.dev.yml logs backend --tail=20
 🤖 Cargando configuración de LLMs...
 📂 Configuración LLM cargada desde llm_config.json
 ✅ Configuración LLM cargada exitosamente
-   - conversation_agent: gemini-1.5-flash
-   - planning_agent: gemini-1.5-flash
-   - execution_agent: gemini-1.5-flash
-   - analysis_agent: gemini-1.5-flash
-   - memory_agent: gemini-1.5-flash
-   - optimization_agent: gemini-1.5-flash
+   - conversation_agent: gemini-2.5-flash
+   - planning_agent: gemini-2.5-flash
+   - execution_agent: gemini-2.5-flash
+   - analysis_agent: gemini-2.5-flash
+   - memory_agent: gemini-2.5-flash
+   - optimization_agent: gemini-2.5-flash
 ```
 
 ### **🌐 Prueba Final con Google Flash**
@@ -106,7 +106,7 @@ docker-compose -f docker-compose.dev.yml logs backend --tail=20
 python test_google_flash_mcp.py
 ```
 **Resultados:**
-- 🤖 **LLM Configurado**: Google Flash (gemini-1.5-flash)
+- 🤖 **LLM Configurado**: Google Flash (gemini-2.5-flash)
 - 🌐 **Herramientas REALES**: 2/6 (33.3%)
 - ⏱️ **Tiempo real de API**: 1.16s
 - 🐙 **API GitHub utilizada** correctamente
@@ -117,12 +117,12 @@ python test_google_flash_mcp.py
 ### **✅ Configuración LLM Correcta**
 
 #### **🤖 Todos los Agentes usando Google Flash**
-1. **conversation_agent** - ✅ gemini-1.5-flash
-2. **planning_agent** - ✅ gemini-1.5-flash  
-3. **execution_agent** - ✅ gemini-1.5-flash
-4. **analysis_agent** - ✅ gemini-1.5-flash
-5. **memory_agent** - ✅ gemini-1.5-flash
-6. **optimization_agent** - ✅ gemini-1.5-flash
+1. **conversation_agent** - ✅ gemini-2.5-flash
+2. **planning_agent** - ✅ gemini-2.5-flash  
+3. **execution_agent** - ✅ gemini-2.5-flash
+4. **analysis_agent** - ✅ gemini-2.5-flash
+5. **memory_agent** - ✅ gemini-2.5-flash
+6. **optimization_agent** - ✅ gemini-2.5-flash
 
 #### **🌐 APIs Reales Funcionando con Google Flash**
 - **DuckDuckGo Search** - ✅ Procesando respuestas reales
@@ -158,7 +158,7 @@ http://localhost:3000
 
 ### **4. Panel de Configuración LLM**
 - Ve al **Panel de Herramientas** → **Configuración LLM**
-- ✅ **Verificar**: Todos los agentes configurados con "gemini-1.5-flash"
+- ✅ **Verificar**: Todos los agentes configurados con "gemini-2.5-flash"
 - 🧪 **Probar**: Botón "Test" debe mostrar conexión exitosa
 
 ## 🎯 **Beneficios de la Corrección**
@@ -181,7 +181,7 @@ http://localhost:3000
 
 ## ✅ **CORRECCIÓN COMPLETADA**
 
-**🎉 RESULTADO FINAL**: Todos los LLMs ahora usan **Google Flash (gemini-1.5-flash)** que es la única API key disponible. El sistema funciona completamente con:
+**🎉 RESULTADO FINAL**: Todos los LLMs ahora usan **Google Flash (gemini-2.5-flash)** que es la única API key disponible. El sistema funciona completamente con:
 
 - 🤖 **6 agentes** usando Google Flash
 - 🌐 **2 APIs reales** funcionando (DuckDuckGo, GitHub)

@@ -76,12 +76,12 @@ class SynapseMigration:
         # Start with default config
         new_config = {
             "llm": {
-                "conversation_agent": "gemini-1.5-flash",
-                "planning_agent": "gemini-1.5-flash",
-                "execution_agent": "gemini-1.5-flash",
-                "analysis_agent": "gemini-1.5-flash",
-                "memory_agent": "gemini-1.5-flash",
-                "optimization_agent": "gemini-1.5-flash"
+                "conversation_agent": "gemini-2.5-flash",
+                "planning_agent": "gemini-2.5-flash",
+                "execution_agent": "gemini-2.5-flash",
+                "analysis_agent": "gemini-2.5-flash",
+                "memory_agent": "gemini-2.5-flash",
+                "optimization_agent": "gemini-2.5-flash"
             },
             "server": {
                 "host": "0.0.0.0",

@@ -56,7 +56,7 @@ def test_llm_config_functions():
         # Modificar configuración temporalmente
         original_config = llm_config.copy()
         llm_config['conversation_agent'] = 'claude-3-opus'
-        llm_config['execution_agent'] = 'gemini-flash'
+        llm_config['execution_agent'] = 'gemini-2.5-flash'
         
         # Guardar
         save_llm_config_to_disk()
@@ -150,7 +150,7 @@ def test_llm_options():
             'speed': 'Rápido'
         },
         {
-            'id': 'gemini-flash',
+            'id': 'gemini-2.5-flash',
             'name': 'Gemini Flash',
             'provider': 'Google',
             'tier': 'fast',
@@ -213,7 +213,7 @@ def test_agent_recommendations():
         {
             'id': 'execution_agent',
             'name': 'Agente de Ejecución',
-            'recommended': ['gpt-3.5-turbo', 'claude-3-haiku', 'gemini-flash']
+            'recommended': ['gpt-3.5-turbo', 'claude-3-haiku', 'gemini-2.5-flash']
         },
         {
             'id': 'analysis_agent',
@@ -223,7 +223,7 @@ def test_agent_recommendations():
         {
             'id': 'memory_agent',
             'name': 'Agente de Memoria',
-            'recommended': ['gpt-3.5-turbo', 'claude-3-haiku', 'gemini-flash']
+            'recommended': ['gpt-3.5-turbo', 'claude-3-haiku', 'gemini-2.5-flash']
         },
         {
             'id': 'optimization_agent',

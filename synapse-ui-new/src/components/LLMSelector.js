@@ -52,7 +52,7 @@ const LLMSelector = () => {
       description: 'Ejecuta pasos del plan y coordina herramientas',
       icon: Zap,
       color: 'text-yellow-500',
-      recommended: ['gpt-3.5-turbo', 'claude-3-haiku', 'gemini-flash']
+      recommended: ['gpt-3.5-turbo', 'claude-3-haiku', 'gemini-2.5-flash']
     },
     {
       id: 'analysis_agent',
@@ -68,7 +68,7 @@ const LLMSelector = () => {
       description: 'Gestiona contexto persistente y recuperación de información',
       icon: Brain,
       color: 'text-indigo-500',
-      recommended: ['gpt-3.5-turbo', 'claude-3-haiku', 'gemini-flash']
+      recommended: ['gpt-3.5-turbo', 'claude-3-haiku', 'gemini-2.5-flash']
     },
     {
       id: 'optimization_agent',
@@ -137,7 +137,7 @@ const LLMSelector = () => {
       speed: 'Rápido'
     },
     {
-      id: 'gemini-flash',
+      id: 'gemini-2.5-flash',
       name: 'Gemini Flash',
       provider: 'Google',
       tier: 'fast',

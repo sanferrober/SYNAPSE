@@ -11,6 +11,7 @@ import SimpleDebugPanel from './components/SimpleDebugPanel';
 import SimpleOutputsPanel from './components/SimpleOutputsPanel';
 import OutputsPanelFixed from './components/OutputsPanelFixed';
 import LLMSelector from './components/LLMSelector';
+import MCPConfigPanel from './components/MCPConfigPanel';
 import StatusBar from './components/StatusBar';
 import {
   MessageSquare,
@@ -24,7 +25,9 @@ import {
   Maximize2,
   Minimize2,
   Bug,
-  Cpu
+  Cpu,
+  Key,
+  Search
 } from 'lucide-react';
 
 // Componente interno que usa el contexto
@@ -78,6 +81,12 @@ function AppContent() {
       name: 'LLM Config',
       icon: Cpu,
       component: LLMSelector,
+    },
+    {
+      id: 'mcp-config',
+      name: 'MCP Config',
+      icon: Key,
+      component: MCPConfigPanel,
     },
     {
       id: 'debug',

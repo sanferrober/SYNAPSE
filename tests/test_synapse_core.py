@@ -31,7 +31,7 @@ class TestConfig(unittest.TestCase):
     
     def test_default_config(self):
         """Test default configuration values"""
-        self.assertEqual(self.config.llm.conversation_agent, "gemini-1.5-flash")
+        self.assertEqual(self.config.llm.conversation_agent, "gemini-2.5-flash")
         self.assertEqual(self.config.server.port, 5000)
         self.assertEqual(self.config.memory.max_conversations, 1000)
         self.assertTrue(self.config.tools.enable_mcp_tools)

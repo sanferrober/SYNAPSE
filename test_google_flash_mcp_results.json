@@ -1,6 +1,6 @@
 {
   "timestamp": "2025-06-16 01:26:09",
-  "llm_model": "gemini-1.5-flash",
+  "llm_model": "gemini-2.5-flash",
   "total_steps": 6,
   "real_tools_used": 2,
   "real_percentage": 33.33333333333333,

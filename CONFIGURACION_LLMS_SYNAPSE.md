@@ -256,9 +256,9 @@ python test_llm_config.py
 {
   "conversation_agent": "gemini-pro",
   "planning_agent": "gemini-pro",
-  "execution_agent": "gemini-flash",
+  "execution_agent": "gemini-2.5-flash",
   "analysis_agent": "claude-3-haiku",
-  "memory_agent": "gemini-flash",
+  "memory_agent": "gemini-2.5-flash",
   "optimization_agent": "claude-3-haiku"
 }
 ```
@@ -327,9 +327,9 @@ python test_llm_config.py
 {
   "conversation_agent": "gpt-3.5-turbo",
   "planning_agent": "gpt-3.5-turbo", 
-  "execution_agent": "gemini-flash",
+  "execution_agent": "gemini-2.5-flash",
   "analysis_agent": "claude-3-haiku",
-  "memory_agent": "gemini-flash",
+  "memory_agent": "gemini-2.5-flash",
   "optimization_agent": "claude-3-haiku"
 }
 ```
@@ -349,10 +349,10 @@ python test_llm_config.py
 ### **Uso Personal/Hobby**
 ```json
 {
-  "conversation_agent": "gemini-pro",
+  "conversation_agent": "gemini-2.5-pro",
   "planning_agent": "claude-3-sonnet",
   "execution_agent": "gpt-3.5-turbo",
-  "analysis_agent": "gemini-pro",
+  "analysis_agent": "gemini-2.5-pro",
   "memory_agent": "gpt-3.5-turbo",
   "optimization_agent": "claude-3-sonnet"
 }

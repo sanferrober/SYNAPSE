@@ -1,0 +1,48 @@
+{
+  "api_keys": {
+    "brave_search": {
+      "key": "",
+      "description": "Brave Search API Key - Get it from https://brave.com/search/api/",
+      "required": true
+    },
+    "tavily_search": {
+      "key": "",
+      "description": "Tavily Search API Key - Get it from https://tavily.com/",
+      "required": true
+    },
+    "firecrawl": {
+      "key": "",
+      "description": "Firecrawl API Key - Get it from https://firecrawl.dev/",
+      "required": true
+    },
+    "github": {
+      "key": "",
+      "description": "GitHub Personal Access Token - Get it from https://github.com/settings/tokens",
+      "required": false
+    },
+    "openweather": {
+      "key": "",
+      "description": "OpenWeather API Key - Get it from https://openweathermap.org/api",
+      "required": true
+    },
+    "newsapi": {
+      "key": "",
+      "description": "NewsAPI Key - Get it from https://newsapi.org/",
+      "required": true
+    }
+  },
+  "fallback_tools": {
+    "brave_search_mcp": ["web_search_mcp", "duckduckgo_mcp"],
+    "tavily_search": ["web_search_mcp", "brave_search_mcp"],
+    "firecrawl_mcp": ["web_scraper_mcp", "content_extractor_mcp"],
+    "weather_mcp": ["openweather_mcp"],
+    "news_mcp": ["newsapi_mcp", "rss_reader_mcp"]
+  },
+  "free_tools": [
+    "web_search_mcp",
+    "duckduckgo_mcp",
+    "github_mcp",
+    "wikipedia_mcp",
+    "rss_reader_mcp"
+  ]
+}

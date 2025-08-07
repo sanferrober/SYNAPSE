@@ -138,7 +138,7 @@ def test_mcp_tools_with_google_flash():
         
         real_percentage = (real_tools_used / total_steps) * 100 if total_steps > 0 else 0
         
-        print(f"🤖 LLM Configurado: Google Flash (gemini-1.5-flash)")
+        print(f"🤖 LLM Configurado: Google Flash (gemini-2.5-flash)")
         print(f"🌐 Herramientas REALES usadas: {real_tools_used}/{total_steps}")
         print(f"🤖 Herramientas SIMULADAS: {total_steps - real_tools_used}/{total_steps}")
         print(f"📈 Porcentaje de herramientas reales: {real_percentage:.1f}%")
@@ -154,7 +154,7 @@ def test_mcp_tools_with_google_flash():
         # Guardar resultados detallados
         results = {
             'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'llm_model': 'gemini-1.5-flash',
+            'llm_model': 'gemini-2.5-flash',
             'total_steps': total_steps,
             'real_tools_used': real_tools_used,
             'real_percentage': real_percentage,

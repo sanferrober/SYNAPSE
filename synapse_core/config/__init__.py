@@ -12,12 +12,12 @@ from pathlib import Path
 @dataclass
 class LLMConfig:
     """Configuration for Language Model agents"""
-    conversation_agent: str = "gemini-1.5-flash"
-    planning_agent: str = "gemini-1.5-flash"
-    execution_agent: str = "gemini-1.5-flash"
-    analysis_agent: str = "gemini-1.5-flash"
-    memory_agent: str = "gemini-1.5-flash"
-    optimization_agent: str = "gemini-1.5-flash"
+    conversation_agent: str = "gemini-2.5-flash"
+    planning_agent: str = "gemini-2.5-flash"
+    execution_agent: str = "gemini-2.5-flash"
+    analysis_agent: str = "gemini-2.5-flash"
+    memory_agent: str = "gemini-2.5-flash"
+    optimization_agent: str = "gemini-2.5-flash"
 
 
 @dataclass
